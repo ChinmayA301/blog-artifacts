@@ -1,0 +1,18 @@
+# Raw datasets (download from SNAP — see data/README.md)
+*.edgelist.gz
+*.txt.gz
+higgs-*
+
+# Cached intermediate artifacts
+*.pkl
+
+# Generated figures (live in the blog's assets, not here)
+figures/
+*.png
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
