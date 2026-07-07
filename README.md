@@ -48,6 +48,14 @@ ROC, calibration, and an explicit look at the overlap zone where it fails.
 A lead/lag cross-correlation paired with a causal DAG, built to show why a
 clean lagged correlation still does not settle a causal claim.
 
+### `football-pressing-context/`
+→ post: Pressing is not a morality stat
+
+An exploratory StatsBomb-open-data study of why raw forward pressure volume is
+an incomplete football metric. It builds player/team samples from public event
+data, then compares a naive pressure-only model against attacking-tradeoff and
+team-context models.
+
 ## A note on data provenance
 
 The projects fall into two honesty tiers, and each subproject's README says
@@ -55,6 +63,8 @@ which it is:
 
 - **Real data, real findings:** `forecast-credibility` (public filings) and
   `virality-bayesian-optimization` (SNAP Higgs graph).
+- **Real public data, scoped exploratory findings:** `football-pressing-context`
+  (StatsBomb open event data; incomplete competition coverage, no tracking).
 - **Real method, synthetic-but-labeled data:** `signalgraph-fake-stars`,
   `ai-human-detector`, and `media-influence-causality`. The live sources
   (authenticated GitHub API; paired human/AI corpora; assembled influence

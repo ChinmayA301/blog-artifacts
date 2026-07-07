@@ -5,10 +5,16 @@ higgs-*
 
 # Cached intermediate artifacts
 *.pkl
+.cache/
 
 # Generated figures (live in the blog's assets, not here)
 figures/
 *.png
+
+# Derived study outputs
+football-pressing-context/data/*.csv
+football-pressing-context/model_summaries.txt
+football-pressing-context/run_notes.txt
 
 # Python
 __pycache__/
