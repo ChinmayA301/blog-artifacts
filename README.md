@@ -20,7 +20,9 @@ front/back-loaded path comparison, and a Monte Carlo of terminal revenue
 under correlated assumptions.
 
 ### `virality-bayesian-optimization/`
-→ post: [Engineering Virality with Bayesian Optimization](https://app.chinmayarora.com/blog/virality-bo/)
+→ primary study: [Influence Maximization using Bayesian Optimization on the Higgs Graph](https://app.chinmayarora.com/blog/influence-maximization-bayesian-optimization-higgs/)
+
+→ companion essay: [Engineering Virality with Bayesian Optimization](https://app.chinmayarora.com/blog/virality-bo/)
 
 Influence-maximization on the SNAP Higgs retweet graph (223,833-node WCC).
 A four-stage experiment showing that **the search-space design — not the

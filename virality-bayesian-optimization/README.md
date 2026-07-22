@@ -1,5 +1,7 @@
 # Engineering Virality with Bayesian Optimization
 
+**Primary study:** [Influence Maximization using Bayesian Optimization on the Higgs Graph](https://app.chinmayarora.com/blog/influence-maximization-bayesian-optimization-higgs/)
+
 Code behind the figures in
 [Engineering Virality with Bayesian Optimization](https://app.chinmayarora.com/blog/virality-bo/)
 
