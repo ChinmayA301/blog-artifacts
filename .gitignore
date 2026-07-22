@@ -15,6 +15,7 @@ figures/
 football-pressing-context/data/*.csv
 football-pressing-context/model_summaries.txt
 football-pressing-context/run_notes.txt
+football-pressing-context/code/outputs/
 
 # Python
 __pycache__/
