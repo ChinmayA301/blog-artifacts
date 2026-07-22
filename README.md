@@ -56,15 +56,26 @@ an incomplete football metric. It builds player/team samples from public event
 data, then compares a naive pressure-only model against attacking-tradeoff and
 team-context models.
 
+### `ai-value-translation-audit/`
+→ study: AI Value Translation Audit
+
+A secondary-data audit of nine documented enterprise-AI use cases. It scores
+workflow specificity, data readiness, evaluation, accountability, and value
+translation to distinguish local productivity gains from governed operational
+performance.
+
 ## A note on data provenance
 
-The projects fall into two honesty tiers, and each subproject's README says
-which it is:
+The projects are separated by evidence type, and each subproject's README says
+which type applies:
 
 - **Real data, real findings:** `forecast-credibility` (public filings) and
   `virality-bayesian-optimization` (SNAP Higgs graph).
 - **Real public data, scoped exploratory findings:** `football-pressing-context`
   (StatsBomb open event data; incomplete competition coverage, no tracking).
+- **Real reported outcomes, author-scored synthesis:**
+  `ai-value-translation-audit` (nine linked papers and case studies; a small,
+  purposive sample scored with an explicit rubric, not a causal meta-analysis).
 - **Real method, synthetic-but-labeled data:** `signalgraph-fake-stars`,
   `ai-human-detector`, and `media-influence-causality`. The live sources
   (authenticated GitHub API; paired human/AI corpora; assembled influence
