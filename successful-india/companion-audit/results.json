@@ -1,0 +1,37 @@
+{
+  "metric_substitution": {
+    "n_states_uts": 27,
+    "unweighted_state_mean_enrollment_pct": 98.74814814814815,
+    "unweighted_state_mean_reading_pct": 26.759259259259256,
+    "enrollment_range_pct": [
+      95.9,
+      99.9
+    ],
+    "reading_range_pct": [
+      6.2,
+      50.6
+    ],
+    "enrollment_cv": 0.011561216607043949,
+    "reading_cv": 0.42424342887909,
+    "pearson_r": 0.10791062456122069,
+    "pearson_permutation_p": 0.5943202839858007,
+    "pearson_bootstrap_95_ci": [
+      -0.22885929173752118,
+      0.440701015290328
+    ],
+    "spearman_rho": -0.0033623751814933467,
+    "ols_intercept": -79.20267552679331,
+    "ols_slope_reading_pp_per_enrollment_pp": 1.0730523738742102,
+    "ols_r_squared": 0.011644702893192726,
+    "mean_access_capability_wedge_pp": 71.9888888888889,
+    "widest_wedge_state": "Telangana",
+    "narrowest_wedge_state": "Himachal Pradesh"
+  },
+  "enforcement_denominators": {
+    "convictions_per_completed_trial_pct": 93.33333333333333,
+    "convictions_per_prosecution_complaint_pct": 2.337228714524207,
+    "convictions_per_ecir_pct": 0.6326968704101232,
+    "completed_trials_per_ecir_pct": 0.6778895040108462,
+    "complaints_per_ecir_pct": 27.07038752683313
+  }
+}

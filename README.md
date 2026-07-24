@@ -5,9 +5,9 @@ Reproducible code behind the data-driven figures on
 
 Each directory maps to one blog post and is self-contained: the experiment
 code, the figure-generation code, and a README explaining what each figure
-shows and how to reproduce it. Figures themselves live in the blog's own
-assets and are **not** committed here — this repo is the *method*, not the
-output.
+shows and how to reproduce it. Most figures live in the blog's own assets;
+studies explicitly packaged as self-contained audits may also keep checked
+figures alongside their data and documentation.
 
 ## Contents
 
@@ -66,6 +66,15 @@ workflow specificity, data readiness, evaluation, accountability, and value
 translation to distinguish local productivity gains from governed operational
 performance.
 
+### `successful-india/`
+→ post: [Successful India™](https://app.chinmayarora.com/blog/metric-substitution-audit/)
+
+A data essay on metric substitution across learning, wages, credentials,
+research, talent, and accountability. The essay is the primary study; its
+single folder also keeps the original dashboard, 43-claim tracker, exploratory
+scripts, audit memo, and a full 27-state ASER companion analysis with extracted
+CSVs, methods, machine-readable results, and checked figures.
+
 ## A note on data provenance
 
 The projects are separated by evidence type, and each subproject's README says
@@ -78,6 +87,10 @@ which type applies:
 - **Real reported outcomes, author-scored synthesis:**
   `ai-value-translation-audit` (nine linked papers and case studies; a small,
   purposive sample scored with an explicit rubric, not a causal meta-analysis).
+- **Real public aggregates, descriptive cross-sectional audit:**
+  `successful-india/companion-audit` (ASER 2024 state tables and official
+  Enforcement Directorate pipeline totals; no individual-level or party-coded
+  causal inference).
 - **Real method, synthetic-but-labeled data:** `signalgraph-fake-stars`,
   `ai-human-detector`, and `media-influence-causality`. The live sources
   (authenticated GitHub API; paired human/AI corpora; assembled influence
