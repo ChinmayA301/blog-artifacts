@@ -12,8 +12,8 @@ figures/
 *.png
 
 # This audit is intentionally committed as a self-contained study package.
-!metric-substitution-audit/figures/
-!metric-substitution-audit/figures/*.png
+!successful-india/companion-audit/figures/
+!successful-india/companion-audit/figures/*.png
 
 # Derived study outputs
 football-pressing-context/data/*.csv

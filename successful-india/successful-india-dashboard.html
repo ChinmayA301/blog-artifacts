@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Successful India™ — The Scorecard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
+<style>
+  :root{
+    --ink:#141210; --paper:#f6f3ec; --card:#fffdf8; --line:#e2dccf;
+    --muted:#6c6459; --accent:#c0392b; --good:#2e7d5b; --gold:#b8860b;
+    --shadow:0 1px 3px rgba(20,18,16,.10);
+    --serif:Georgia,'Times New Roman',serif;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px 80px}
+
+  /* Masthead */
+  header.mast{padding:52px 0 28px;border-bottom:3px double var(--ink);text-align:center}
+  .kicker{font-family:var(--sans);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);font-weight:700}
+  h1.title{font-family:var(--serif);font-size:clamp(38px,7vw,68px);line-height:.98;letter-spacing:-1.5px;margin:10px 0 6px}
+  h1.title .tm{font-size:.4em;vertical-align:super;color:var(--muted)}
+  .dek{font-family:var(--serif);font-style:italic;font-size:clamp(16px,2.4vw,21px);color:var(--muted);max-width:720px;margin:6px auto 0}
+  .byline{font-size:12px;color:var(--muted);letter-spacing:.4px;margin-top:16px}
+  .byline b{color:var(--ink)}
+
+  /* toggle */
+  .controls{display:flex;justify-content:center;gap:10px;margin:26px 0 8px;flex-wrap:wrap}
+  .toggle{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:30px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600;box-shadow:var(--shadow);user-select:none;transition:.15s}
+  .toggle:hover{border-color:var(--ink)}
+  .toggle input{accent-color:var(--accent);width:15px;height:15px}
+  .toggle .hint{font-weight:400;color:var(--muted);font-size:12px}
+
+  /* section headers */
+  .sec{margin-top:52px}
+  .sec-num{font-family:var(--serif);font-size:13px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;font-weight:700}
+  .sec-title{font-family:var(--serif);font-size:clamp(24px,4vw,34px);line-height:1.1;letter-spacing:-.5px;margin:2px 0 4px}
+  .sec-sub{font-family:var(--serif);font-style:italic;color:var(--muted);font-size:17px;max-width:760px;margin-bottom:20px}
+
+  /* KPI cards */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:16px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 22px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent)}
+  .kpi.good::before{background:var(--good)}
+  .kpi.gold::before{background:var(--gold)}
+  .kpi .official{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:700;display:flex;align-items:center;gap:5px;margin-bottom:8px}
+  .kpi.good .official{color:var(--good)}
+  .kpi .num{font-family:var(--serif);font-size:40px;line-height:1;font-weight:700;letter-spacing:-1px}
+  .kpi .lbl{font-size:13px;color:var(--ink);margin-top:8px;font-weight:600}
+  .kpi .real{font-size:12.5px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+  .kpi .real b{color:var(--accent)}
+  .kpi .src{font-size:10.5px;color:var(--muted);opacity:.75;margin-top:8px;font-style:italic}
+
+  /* chart cards */
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
+  .chartcard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 22px;box-shadow:var(--shadow)}
+  .chartcard.full{grid-column:1/-1}
+  .chartcard h3{font-family:var(--serif);font-size:18px;margin-bottom:2px}
+  .chartcard .csub{font-size:12.5px;color:var(--muted);margin-bottom:14px}
+  .chartbox{position:relative;height:300px}
+  .chartbox.tall{height:340px}
+
+  /* caveat */
+  .caveat{background:#fbf6e9;border:1px solid #e8dcbc;border-left:4px solid var(--gold);border-radius:8px;padding:14px 18px;margin-top:16px;font-size:13.5px;color:#5c5238}
+  .caveat b{color:var(--gold);text-transform:uppercase;letter-spacing:.5px;font-size:11px}
+  .caveat.hidden{display:none}
+
+  /* table */
+  .tablecard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 22px;box-shadow:var(--shadow);margin-top:20px;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--ink);font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);cursor:pointer;white-space:nowrap}
+  th:hover{color:var(--ink)}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .verdict{font-weight:700;white-space:nowrap}
+  .v-spin{color:var(--accent)} .v-real{color:var(--good)} .v-mixed{color:var(--gold)}
+  td .cite{font-size:11px;color:var(--muted);font-style:italic}
+
+  /* accountability block */
+  .accgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:8px}
+  .acc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 22px;box-shadow:var(--shadow);border-top:4px solid var(--accent)}
+  .acc h4{font-family:var(--serif);font-size:19px;margin-bottom:4px}
+  .acc .tag{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--good);font-weight:700;margin-bottom:10px}
+  .acc p{font-size:13.5px;color:#443f38;margin-bottom:8px}
+  .acc .stat{font-family:var(--serif);font-size:15px;color:var(--accent);font-weight:700}
+  .acc .src{font-size:11px;color:var(--muted);font-style:italic;margin-top:6px}
+
+  .closer{margin-top:56px;padding:32px;background:var(--ink);color:var(--paper);border-radius:12px}
+  .closer h3{font-family:var(--serif);font-size:26px;margin-bottom:14px}
+  .closer p{font-size:15px;color:#d8d1c4;margin-bottom:12px;max-width:820px}
+  .closer .punch{font-family:var(--serif);font-style:italic;font-size:18px;color:#fff;border-left:3px solid var(--accent);padding-left:16px;margin-top:18px}
+
+  footer.foot{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);text-align:center;line-height:1.7}
+
+  @media(max-width:760px){.charts{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <div class="kicker">An Official Progress Report</div>
+    <h1 class="title">Successful India<span class="tm">™</span></h1>
+    <p class="dek">A country winning at everything except the things that compound. Every number is sourced. Where it's genuinely good, it says so. Where the fault is old, it says that too.</p>
+    <p class="byline">A data essay · <b>Government replies, court judgments, peer-reviewed papers &amp; named surveys only</b> · Contested figures show both sides</p>
+    <div class="controls">
+      <label class="toggle">
+        <input type="checkbox" id="honestyToggle" checked>
+        <span>Honesty Mode</span>
+        <span class="hint">— show the caveats that keep this fair</span>
+      </label>
+    </div>
+  </header>
+
+  <!-- I. THE HEADLINE -->
+  <section class="sec">
+    <div class="sec-num">Exhibit I</div>
+    <h2 class="sec-title">We are the fastest-growing major economy</h2>
+    <p class="sec-sub">True. And worth saying plainly. The only question is who is in the photograph — because GDP is a picture taken from far enough away that everyone looks like they're smiling.</p>
+
+    <div class="kpis">
+      <div class="kpi gold">
+        <div class="official">◆ Official Scoreboard</div>
+        <div class="num">~7%</div>
+        <div class="lbl">Real GDP growth, FY24–FY26</div>
+        <div class="real">Real rural wage growth over the same decade: <b>~1%/yr</b>, down from ~7% pre-2016.</div>
+        <div class="src">IBEF / Economic Survey · Das &amp; Drèze, Labour Bureau wage series</div>
+      </div>
+      <div class="kpi gold">
+        <div class="official">◆ Official Scoreboard</div>
+        <div class="num">+22.3%</div>
+        <div class="lbl">Corporate profit growth, FY24 (Nifty 500)</div>
+        <div class="real">Jobs at those same firms grew <b>+1.5%</b>. Growth accrued to capital, not labour.</div>
+        <div class="src">SBI / Nifty 500 analysis, FY24</div>
+      </div>
+      <div class="kpi">
+        <div class="official" style="color:var(--accent)">▲ What It Hides</div>
+        <div class="num">4.8%</div>
+        <div class="lbl">Profit-to-GDP ratio, Nifty 500</div>
+        <div class="real">Highest since <b>FY08</b> — the year before the global financial crisis.</div>
+        <div class="src">SBI analysis · The Federal, 2025</div>
+      </div>
+    </div>
+
+    <div class="charts">
+      <div class="chartcard">
+        <h3>The two lines leaving the same point</h3>
+        <div class="csub">Indexed to 100 at 2015-16. Output climbs; the median wage flattens.</div>
+        <div class="chartbox"><canvas id="wageChart"></canvas></div>
+      </div>
+      <div class="chartcard">
+        <h3>Profits vs. jobs, same companies, FY24</h3>
+        <div class="csub">The K-shape in a single bar chart.</div>
+        <div class="chartbox"><canvas id="profitChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="caveat">
+      <b>Honesty mode</b><br>
+      "Jobless growth" is not a recent invention. Employment elasticity has been falling since the 1991 liberalisation, as growth concentrated in capital-intensive services that don't hire at scale. This government inherited the pattern — what changed was the marketing of the aggregate while the wage line went flat underneath it.
+    </div>
+  </section>
+
+  <!-- II. THE CHILDREN -->
+  <section class="sec">
+    <div class="sec-num">Exhibit II</div>
+    <h2 class="sec-title">The part about the children — because it's the part that compounds</h2>
+    <p class="sec-sub">If wages are the present tense, learning is the future tense. And the future tense is where the real bill is being run up.</p>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="official" style="color:var(--accent)">▲ The Number This Essay Orbits</div>
+        <div class="num">27.1%</div>
+        <div class="lbl">Class 3 children who can read a Class 2 text (all schools)</div>
+        <div class="real">About <b>3 in 4</b> can't read the textbook meant for the grade below — and in government schools it's just <b>23.4%</b>.</div>
+        <div class="src">ASER 2024, Pratham / ASER Centre</div>
+      </div>
+      <div class="kpi">
+        <div class="official" style="color:var(--accent)">▲ Credential ≠ Capability</div>
+        <div class="num">83%</div>
+        <div class="lbl">2024 engineering grads without a job/internship</div>
+        <div class="real">Even as <b>71.5%</b> were rated "job-ready" on paper. The gap is the whole crisis.</div>
+        <div class="src">Unstop Talent Report 2025 · India Skills Report 2025</div>
+      </div>
+      <div class="kpi">
+        <div class="official" style="color:var(--accent)">▲ The Real Deadline</div>
+        <div class="num">&lt;7%</div>
+        <div class="lbl">Male grads in a permanent salaried job within a year (2023)</div>
+        <div class="real">The demographic dividend window closes ~<b>2040</b>. Today's Class 3 will be 22.</div>
+        <div class="src">State of Working India 2026, Azim Premji University</div>
+      </div>
+    </div>
+
+    <div class="charts">
+      <div class="chartcard full">
+        <h3>Enrolment we photographed. Learning we didn't.</h3>
+        <div class="csub">Foundational skills, ASER 2024. Reading (all schools) = all-India; items marked ▪ govt are government-school figures. We optimised "bums on seats" and called it done.</div>
+        <div class="chartbox"><canvas id="learnChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="caveat">
+      <b>Honesty mode · cuts both ways</b><br>
+      <b>In the government's favour:</b> ASER 2024 recorded the biggest improvement in the report's 20-year history, driven by government schools and the NEP 2020 foundational-literacy push. Real, ground-level, worth crediting.<br><br>
+      <b>Against it:</b> India's own government learning survey, the NAS, is statistically unreliable even for comparing states (Johnson &amp; Parrado, 2021). When the official machinery grades its own progress, treat it like a student grading their own exam.
+    </div>
+  </section>
+
+  <!-- III & IV. THE DRAIN + AI -->
+  <section class="sec">
+    <div class="sec-num">Exhibit III &amp; IV</div>
+    <h2 class="sec-title">The best ones leave. Then they build the AI industry — elsewhere.</h2>
+    <p class="sec-sub">Migration doesn't just rise with education. It rises with ability. The better you are, the more likely India loses you — and the AI-50 founders are, substantially, the same people.</p>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="official" style="color:var(--accent)">▲ Migration Rises With Ability</div>
+        <div class="num">62%</div>
+        <div class="lbl">Of the top 100 JEE scorers migrate abroad</div>
+        <div class="real">Among the top 10: <b>9 out of 10</b>. It's not education — it's the tail of talent leaving.</div>
+        <div class="src">Ganguli et al., J. of Development Economics / NBER</div>
+      </div>
+      <div class="kpi gold">
+        <div class="official">◆ India Leads (Just Not Here)</div>
+        <div class="num">#1</div>
+        <div class="lbl">Country of origin for immigrant US-unicorn founders</div>
+        <div class="real"><b>96 companies</b> — ahead of Israel (60), UK (47), China (41).</div>
+        <div class="src">NFAP, "Immigrants &amp; US Billion-Dollar Companies," 2026</div>
+      </div>
+      <div class="kpi">
+        <div class="official" style="color:var(--accent)">▲ The Punchline</div>
+        <div class="num">9</div>
+        <div class="lbl">Indian founders among top US AI companies (most of any origin)</div>
+        <div class="real">60% of top US AI firms have ≥1 immigrant founder. <b>70%+</b> first arrived on a student visa.</div>
+        <div class="src">Institute for Progress, Forbes AI 50 (2025) · CSET</div>
+      </div>
+    </div>
+
+    <div class="charts">
+      <div class="chartcard">
+        <h3>Where the top of the class goes</h3>
+        <div class="csub">Migration rate by JEE rank band. The higher the ability, the higher the exit.</div>
+        <div class="chartbox"><canvas id="iitChart"></canvas></div>
+      </div>
+      <div class="chartcard">
+        <h3>The AI frontier: an order of magnitude</h3>
+        <div class="csub">Stanford 2025 Global AI Vibrancy score. India is 3rd — and nowhere near.</div>
+        <div class="chartbox"><canvas id="aiChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="caveat">
+      <b>Honesty mode</b><br>
+      India's per-capita "unicorn productivity" is actually low — ~2.5 founders per 100k first-generation immigrants vs Israel's 43 (Stanford VC Initiative). So it's a volume story, not a density story. The point stands: the volume is walking out the door, and India's own sovereign AI compute (~38,000 GPUs, mid-2025) was near-zero until 2024 — against single US clusters of 100,000+ GPUs.
+    </div>
+  </section>
+
+  <!-- V. R&D -->
+  <section class="sec">
+    <div class="sec-num">Exhibit V</div>
+    <h2 class="sec-title">The root cause nobody will fund: research</h2>
+    <p class="sec-sub">Why does the talent leave and the frontier stay abroad? Follow the money that isn't spent.</p>
+
+    <div class="charts">
+      <div class="chartcard">
+        <h3>R&amp;D spend as % of GDP</h3>
+        <div class="csub">India stuck at 0.64% — and it FELL from 0.90% in 2008 as GDP grew.</div>
+        <div class="chartbox"><canvas id="rdChart"></canvas></div>
+      </div>
+      <div class="chartcard">
+        <h3>Researchers per million people</h3>
+        <div class="csub">India produces ~40,000 PhDs/year and has ~85,000 researchers working abroad.</div>
+        <div class="chartbox"><canvas id="resChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="caveat">
+      <b>Honesty mode</b><br>
+      The government did respond — the ANRF (~$10B over 5 years) and a ₹1 lakh crore RDI fund. Real policy. But the reality check that punctures the press release: of the previous year's RDI allocation, only about <b>15% was actually spent</b>. The problem isn't only that we don't allocate — it's that we can't deploy what we do. You can't fix a research culture with a fund you don't disburse.
+    </div>
+  </section>
+
+  <!-- VI. ACCOUNTABILITY -->
+  <section class="sec">
+    <div class="sec-num">Exhibit VI</div>
+    <h2 class="sec-title">The part that is a choice</h2>
+    <p class="sec-sub">Much of the above is culture, inheritance, and global economics — not any one government's doing. This part is different. And it's defensible precisely because none of it is an allegation: it's the Supreme Court's finding and the government's own data.</p>
+
+    <div class="accgrid">
+      <div class="acc">
+        <h4>Electoral Bonds</h4>
+        <div class="tag">✓ Supreme Court judgment, not opinion</div>
+        <p>On 15 Feb 2024 a unanimous 5-judge Constitution Bench struck down the scheme as <b>unconstitutional</b> — anonymous corporate funding violated voters' right to information (Art. 19(1)(a)). The court ordered the data disclosed.</p>
+        <p class="stat">~48% of all bond donations → the ruling party; by one ADR analysis, ~90% of corporate bond money. Scheme worth ~₹16,518 cr. The court warned it could enable "quid pro quo."</p>
+        <div class="src">ADR v. Union of India, 15 Feb 2024 · ECI-disclosed data · ADR</div>
+      </div>
+      <div class="acc">
+        <h4>The Enforcement Asymmetry</h4>
+        <div class="tag">✓ Govt data + ⚠ journalistic estimate — kept separate</div>
+        <p><b>Government's own Parliament replies:</b> the ED registered <b>193 cases</b> against politicians in ten years and secured convictions in <b>two</b>. Overall PMLA conviction rate since 2019: under 5% (42 of 911).</p>
+        <p><b>Not government data:</b> the Ministry of Finance says it keeps no party-wise breakdown. Separately, an <i>Indian Express</i> investigation and a 14-party SC plea put the opposition share of ED/CBI cases at ~54% (pre-2014) rising to <b>~95%</b> (post-2014).</p>
+        <p class="stat">An agency that rarely convicts — and, per journalism the government won't confirm or deny, rarely investigates its own side.</p>
+        <div class="src">Min. of Finance, Rajya Sabha replies (193/2) · Indian Express + 14-party SC plea (95%)</div>
+      </div>
+      <div class="acc">
+        <h4>The Institutional Scoreboard</h4>
+        <div class="tag">✓ Independent global indices</div>
+        <p>V-Dem reclassified India from liberal democracy (2014) to <b>"electoral autocracy"</b> (by 2020), with a ~20% fall in judicial-autonomy indicators. Freedom House: "Free" → "Partly Free" (2021).</p>
+        <p class="stat">RSF press-freedom rank: 150 → 161 of 180. The legal right to dissent survives on paper; the practical possibility, per the Journal of Democracy, largely does not.</p>
+        <div class="src">V-Dem 2025 · Freedom House · RSF · Journal of Democracy</div>
+      </div>
+    </div>
+
+    <div class="caveat">
+      <b>Honesty mode · the caveat you specifically asked for</b><br>
+      India has suspended civil liberties far more severely before. The Emergency (1975–77) was a formal suspension of democracy — press censored by law, opposition jailed en masse. Sedition law (IPC 124A) has been abused by governments of every stripe since independence. The institutions were never pristine. What the data describes now is not unprecedented in <b>kind</b> — it's a gradual, deniable version of older authoritarian instincts, run through agencies and funding structures rather than a declared Emergency. That makes it worse in its <b>sophistication</b>, not necessarily its severity — and harder to see.
+    </div>
+  </section>
+
+  <!-- MASTER TABLE -->
+  <section class="sec">
+    <div class="sec-num">The Ledger</div>
+    <h2 class="sec-title">Headline vs. substance, in one table</h2>
+    <p class="sec-sub">Click a column header to sort. Filter by verdict to separate genuine wins from photographs.</p>
+    <div class="controls" style="justify-content:flex-start">
+      <label class="toggle"><span>Show:</span>
+        <select id="verdictFilter" style="border:none;background:transparent;font-weight:700;cursor:pointer;font-size:13px">
+          <option value="all">Everything</option>
+          <option value="Spin">Photographs (spin)</option>
+          <option value="Real">Genuine wins</option>
+          <option value="Mixed">Mixed / contested</option>
+        </select>
+      </label>
+    </div>
+    <div class="tablecard">
+      <table id="ledger">
+        <thead>
+          <tr>
+            <th data-k="theme">Theme</th>
+            <th data-k="headline">The Headline</th>
+            <th data-k="reality">The Substance</th>
+            <th data-k="verdict">Verdict</th>
+          </tr>
+        </thead>
+        <tbody id="ledgerBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="closer">
+    <h3>So what is "Successful India™"?</h3>
+    <p>A country that grew its GDP faster than almost anyone and its median wage barely at all. That put nearly every child in school and taught three in four of them to read below their grade. That produced the best engineering and AI talent on earth and exported it to build someone else's frontier. That spent 0.64% of GDP on the future and couldn't spend even that. And that documented the erosion of its own accountability institutions so thoroughly the evidence comes from its own courts and its own Parliament.</p>
+    <p>None of this says India is failing, or that one party broke a working machine. Much is cultural, much is inherited, much predates 2014 and would outlast any government. The point is narrower: <b>we've become extraordinarily good at producing numbers that look like success, and extraordinarily reluctant to measure the things that actually compound</b> — learning, wages, retained talent, research, and the health of the institutions that keep power honest. GDP was always going to grow. We chose it as the scoreboard precisely because it flatters us.</p>
+    <div class="punch">The children who can't read the grade-2 textbook are eight years old. In 2040, when the demographic window closes, they'll be twenty-two. That is the actual deadline. Everything else is a photograph.</div>
+  </div>
+
+  <footer class="foot">
+    <b>Sources:</b> ASER 2024 · State of Working India 2026 · Economic Survey 2025-26 · MoSPI/PLFS · Labour Bureau wage series · Ganguli et&nbsp;al. (JDE/NBER) · NFAP 2026 · Institute for Progress · Stanford AI Index 2025 · Henley &amp; Partners · OECD · ADR v. Union of India (Supreme Court, 15 Feb 2024) · Ministry of Finance Rajya Sabha replies · V-Dem 2025 · Freedom House · RSF · Journal of Democracy.<br>
+    Every contested figure cites both sides. This is a data essay, not a verdict on any individual. Corrections welcome — the point is to be right, not loud.
+  </footer>
+
+</div>
+
+<script>
+Chart.defaults.font.family = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#6c6459';
+const INK='#141210', ACCENT='#c0392b', GOOD='#2e7d5b', GOLD='#b8860b', MUTED='#a89f90', LINE='#e2dccf';
+const gridCfg = {grid:{color:LINE}, ticks:{color:'#6c6459'}};
+
+// I — wages vs output
+new Chart(document.getElementById('wageChart'),{
+  type:'line',
+  data:{labels:['2015-16','2017-18','2019-20','2021-22','2023-24'],
+    datasets:[
+      {label:'Per-capita income (real, indexed)',data:[100,109,119,124,140],borderColor:GOLD,backgroundColor:GOLD+'18',borderWidth:2.5,tension:.3,fill:true,pointRadius:3},
+      {label:'Real rural wage (indexed)',data:[100,101,102,103,105],borderColor:ACCENT,backgroundColor:ACCENT+'12',borderWidth:2.5,tension:.3,fill:true,pointRadius:3}
+    ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:14}}},
+    scales:{y:{...gridCfg,title:{display:true,text:'Indexed to 100 (2015-16)'}},x:gridCfg}}
+});
+
+// I — profits vs jobs
+new Chart(document.getElementById('profitChart'),{
+  type:'bar',
+  data:{labels:['Corporate profit','Employment'],
+    datasets:[{data:[22.3,1.5],backgroundColor:[GOOD,ACCENT],borderRadius:6,barPercentage:.55}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+'% growth, FY24'}}},
+    scales:{y:{...gridCfg,title:{display:true,text:'% growth, FY24 (Nifty 500 firms)'}},x:gridCfg}}
+});
+
+// II — learning by grade (all-India where available; ▪govt = government-school figures per ASER)
+new Chart(document.getElementById('learnChart'),{
+  type:'bar',
+  data:{labels:['Read Class-2 text (Cl.3)','Do subtraction (Cl.3)','▪govt Read (Cl.5)','▪govt Divide (Cl.5)'],
+    datasets:[
+      {label:'Can',data:[27.1,33.7,44.8,30.7],backgroundColor:GOOD,borderRadius:5,stack:'s'},
+      {label:'Cannot',data:[72.9,66.3,55.2,69.3],backgroundColor:ACCENT+'cc',borderRadius:5,stack:'s'}
+    ]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:14}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.x+'%'}}},
+    scales:{x:{...gridCfg,stacked:true,max:100,title:{display:true,text:'% of students'}},y:{...gridCfg,stacked:true}}}
+});
+
+// III — IIT migration
+new Chart(document.getElementById('iitChart'),{
+  type:'bar',
+  data:{labels:['Top 1,000','Top 100','Top 10'],
+    datasets:[{data:[36,62,90],backgroundColor:[ACCENT+'99',ACCENT+'cc',ACCENT],borderRadius:6,barPercentage:.6}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+'% migrate abroad'}}},
+    scales:{y:{...gridCfg,max:100,title:{display:true,text:'% migrating abroad'}},x:{...gridCfg,title:{display:true,text:'JEE rank band'}}}}
+});
+
+// IV — AI vibrancy
+new Chart(document.getElementById('aiChart'),{
+  type:'bar',
+  data:{labels:['United States','China','India'],
+    datasets:[{data:[78.6,36.95,21.59],backgroundColor:[INK,'#8a7f6f',ACCENT],borderRadius:6,barPercentage:.6}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'Score: '+c.parsed.y}}},
+    scales:{y:{...gridCfg,title:{display:true,text:'Global AI Vibrancy score, 2025'}},x:gridCfg}}
+});
+
+// V — R&D
+new Chart(document.getElementById('rdChart'),{
+  type:'bar',
+  data:{labels:['Israel','S. Korea','USA','China','World avg','India'],
+    datasets:[{data:[5.6,4.9,3.5,2.4,1.8,0.64],backgroundColor:['#8a7f6f','#8a7f6f','#8a7f6f','#8a7f6f',GOLD,ACCENT],borderRadius:6,barPercentage:.65}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+'% of GDP'}}},
+    scales:{y:{...gridCfg,title:{display:true,text:'GERD as % of GDP'}},x:gridCfg}}
+});
+
+// V — researchers
+new Chart(document.getElementById('resChart'),{
+  type:'bar',
+  data:{labels:['S. Korea','India'],
+    datasets:[{data:[8714,262],backgroundColor:['#8a7f6f',ACCENT],borderRadius:6,barPercentage:.5}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y.toLocaleString()+' researchers / million'}}},
+    scales:{y:{...gridCfg,title:{display:true,text:'Researchers per million people'}},x:gridCfg}}
+});
+
+// LEDGER
+const ledger = [
+  {theme:'Economy', headline:'Fastest-growing major economy, ~7% GDP', reality:'Real rural wages ~1%/yr; median living standard flat', reality_c:'Das & Drèze, Labour Bureau', verdict:'Spin'},
+  {theme:'Economy', headline:'Record corporate profits & GST collections', reality:'Profit-to-GDP at FY08 highs; jobs at same firms +1.5%', reality_c:'SBI / Nifty 500', verdict:'Spin'},
+  {theme:'Education', headline:'Near-universal school enrolment (~98%)', reality:'~73% of Class 3 cannot read a Class-2 text (77% in govt schools)', reality_c:'ASER 2024', verdict:'Spin'},
+  {theme:'Education', headline:'ASER 2024: best learning gains in 20 years', reality:'Genuine, govt-school-led, NEP/FLN-driven recovery', reality_c:'ASER 2024', verdict:'Real'},
+  {theme:'Skills', headline:'71.5% of engineers rated "job-ready"', reality:'83% of 2024 grads without a job or internship', reality_c:'Unstop / India Skills Report', verdict:'Spin'},
+  {theme:'Talent', headline:'World-class IIT & medical talent pool', reality:'62% of top-100 JEE scorers migrate abroad', reality_c:'Ganguli et al., JDE/NBER', verdict:'Spin'},
+  {theme:'AI', headline:'India ranks #3 in global AI vibrancy', reality:'Score 21.6 vs US 78.6; no home-grown frontier model', reality_c:'Stanford AI Index 2025', verdict:'Mixed'},
+  {theme:'AI', headline:'Indians build much of US AI', reality:'#1 origin of US-unicorn founders — but built abroad', reality_c:'NFAP 2026 / IFP', verdict:'Mixed'},
+  {theme:'Digital', headline:'UPI, BHASHINI, ISRO, DPI exports', reality:'Real, measurable, built infrastructure — credit due', reality_c:'NPCI / BHASHINI / ISRO', verdict:'Real'},
+  {theme:'Research', headline:'ANRF & ₹1 lakh cr RDI fund announced', reality:'GERD 0.64% (fell from 0.90%); ~15% of RDI fund spent', reality_c:'Economic Survey 2025-26', verdict:'Spin'},
+  {theme:'Wealth', headline:'Booming ultra-wealthy population', reality:'~3,500 millionaires/yr leaving (~$26B) — but base rising', reality_c:'Henley / Knight Frank', verdict:'Mixed'},
+  {theme:'Accountability', headline:'Anti-corruption drive via ED/CBI', reality:'193 cases, 2 convictions (govt data); ~95% opposition-share per Indian Express, not govt', reality_c:'MoF Rajya Sabha + Indian Express', verdict:'Spin'},
+  {theme:'Accountability', headline:'Transparent political funding (bonds)', reality:'Struck down as unconstitutional; SC warned "quid pro quo"', reality_c:'ADR v. Union of India, SC 2024', verdict:'Spin'},
+  {theme:'Democracy', headline:'World\'s largest democracy', reality:'Reclassified "electoral autocracy"; press rank 150→161', reality_c:'V-Dem 2025 / Freedom House / RSF', verdict:'Spin'},
+];
+const vClass = {Spin:'v-spin',Real:'v-real',Mixed:'v-mixed'};
+const vLabel = {Spin:'📸 Photograph',Real:'✓ Genuine',Mixed:'◑ Contested'};
+let sortKey=null, sortAsc=true, filter='all';
+function renderLedger(){
+  let rows = ledger.filter(r=>filter==='all'||r.verdict===filter);
+  if(sortKey){rows=[...rows].sort((a,b)=>{const x=(a[sortKey]||'').toString().toLowerCase(),y=(b[sortKey]||'').toString().toLowerCase();return (x<y?-1:x>y?1:0)*(sortAsc?1:-1);});}
+  document.getElementById('ledgerBody').innerHTML = rows.map(r=>`
+    <tr>
+      <td><b>${r.theme}</b></td>
+      <td>${r.headline}</td>
+      <td>${r.reality}<br><span class="cite">${r.reality_c}</span></td>
+      <td class="verdict ${vClass[r.verdict]}">${vLabel[r.verdict]}</td>
+    </tr>`).join('');
+}
+document.querySelectorAll('#ledger th').forEach(th=>th.addEventListener('click',()=>{
+  const k=th.dataset.k; if(sortKey===k)sortAsc=!sortAsc;else{sortKey=k;sortAsc=true;} renderLedger();
+}));
+document.getElementById('verdictFilter').addEventListener('change',e=>{filter=e.target.value;renderLedger();});
+renderLedger();
+
+// Honesty toggle
+document.getElementById('honestyToggle').addEventListener('change',e=>{
+  document.querySelectorAll('.caveat').forEach(c=>c.classList.toggle('hidden',!e.target.checked));
+});
+</script>
+</body>
+</html>

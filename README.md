@@ -64,15 +64,14 @@ workflow specificity, data readiness, evaluation, accountability, and value
 translation to distinguish local productivity gains from governed operational
 performance.
 
-### `metric-substitution-audit/`
-→ post: [The Proxy Gap: When Access Stops Measuring Capability](https://app.chinmayarora.com/blog/metric-substitution-audit/)
+### `successful-india/`
+→ post: [Successful India™](https://app.chinmayarora.com/blog/metric-substitution-audit/)
 
-A source-audited study of metric substitution. It compares rural school
-enrollment with foundational reading across all 27 ASER 2024 state/UT pages,
-then uses official Enforcement Directorate aggregates to demonstrate why
-changing a denominator changes the question being answered. The folder keeps
-the code, extracted CSVs, methods, source audit, machine-readable results, and
-checked figures together.
+A data essay on metric substitution across learning, wages, credentials,
+research, talent, and accountability. The essay is the primary study; its
+single folder also keeps the original dashboard, 43-claim tracker, exploratory
+scripts, audit memo, and a full 27-state ASER companion analysis with extracted
+CSVs, methods, machine-readable results, and checked figures.
 
 ## A note on data provenance
 
@@ -87,9 +86,9 @@ which type applies:
   `ai-value-translation-audit` (nine linked papers and case studies; a small,
   purposive sample scored with an explicit rubric, not a causal meta-analysis).
 - **Real public aggregates, descriptive cross-sectional audit:**
-  `metric-substitution-audit` (ASER 2024 state tables and official Enforcement
-  Directorate pipeline totals; no individual-level or party-coded causal
-  inference).
+  `successful-india/companion-audit` (ASER 2024 state tables and official
+  Enforcement Directorate pipeline totals; no individual-level or party-coded
+  causal inference).
 - **Real method, synthetic-but-labeled data:** `signalgraph-fake-stars`,
   `ai-human-detector`, and `media-influence-causality`. The live sources
   (authenticated GitHub API; paired human/AI corpora; assembled influence
