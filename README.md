@@ -23,11 +23,13 @@ under correlated assumptions.
 → post: [Engineering Virality with Bayesian Optimization](https://app.chinmayarora.com/blog/virality-bo/)
 
 Influence-maximization on the SNAP Higgs retweet graph (223,833-node WCC).
-A four-stage experiment showing that **the search-space design — not the
+A five-stage experiment showing that **the search-space design — not the
 optimizer — decides whether Bayesian Optimization beats a top-degree
 heuristic.** Includes a real Gaussian-Process BO loop, Independent Cascade
 simulation, CELF and centrality baselines, significance testing, and a
-"BO meets graphs" companion visual set.
+"BO meets graphs" companion visual set. Approach B adds topic-conditional
+activation from MatrAIx personas, with the unobserved persona-to-node join
+treated explicitly as a synthetic sensitivity parameter.
 
 ### `signalgraph-fake-stars/`
 → post: SignalGraph — detecting inorganic GitHub stars
@@ -50,11 +52,15 @@ clean lagged correlation still does not settle a causal claim.
 
 ## A note on data provenance
 
-The projects fall into two honesty tiers, and each subproject's README says
-which it is:
+The projects fall into three provenance patterns, and each subproject's README
+says which it is:
 
 - **Real data, real findings:** `forecast-credibility` (public filings) and
-  `virality-bayesian-optimization` (SNAP Higgs graph).
+  stages 1–4 of `virality-bayesian-optimization` (SNAP Higgs graph).
+- **Real topology, synthetic attributes, real method:** Approach B in
+  `virality-bayesian-optimization`. MatrAIx-derived personas are assigned to
+  anonymous Higgs nodes under a declared sensitivity grid; they are not
+  observed attributes of the 2012 users.
 - **Real method, synthetic-but-labeled data:** `signalgraph-fake-stars`,
   `ai-human-detector`, and `media-influence-causality`. The live sources
   (authenticated GitHub API; paired human/AI corpora; assembled influence

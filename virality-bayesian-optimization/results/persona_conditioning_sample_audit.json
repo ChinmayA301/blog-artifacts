@@ -1,0 +1,59 @@
+{
+  "rows": 999,
+  "file_sha256": "c856d4d2d8e9832f3154d9856e5adbe9bf327328ab036069f8a4873992e03439",
+  "source_distribution": {
+    "synthetic": 395,
+    "wiki": 320,
+    "stackoverflow": 113,
+    "amazon": 97,
+    "gss": 64,
+    "prism": 6,
+    "real_human_survey": 4
+  },
+  "required_field_coverage": {
+    "tech_savviness": 0.6506506506506506,
+    "topic_technology": 0.5145145145145145,
+    "topic_science": 0.44144144144144143,
+    "fam_machine_learning": 0.23423423423423423,
+    "topic_sports": 0.5255255255255256,
+    "ind_sports": 0.18018018018018017,
+    "att_social_media": 0.45145145145145144,
+    "att_influencers": 0.44644644644644643,
+    "bfi2_domain_extraversion": 0.5375375375375375,
+    "big5_gregariousness": 0.5175175175175175,
+    "bfi2_facet_sociability": 0.5175175175175175,
+    "big5_excitement_seeking": 0.5215215215215215,
+    "trait_curiosity": 0.7697697697697697,
+    "need_for_cognition": 0.7017017017017017,
+    "cog_reading_vs_watching": 0.5075075075075075,
+    "lstyle_news_freq": 0.4084084084084084
+  },
+  "age_eligible_rows": 665,
+  "age_eligible_share": 0.6656656656656657,
+  "effective_sample_size_after_conditioning": 652.8188069411565,
+  "topic_signal_summary": {
+    "ml_paper": {
+      "mean": 0.5486170154505554,
+      "std": 0.16150995797742138
+    },
+    "sports_clip": {
+      "mean": 0.5363319214783023,
+      "std": 0.1981111685219708
+    }
+  },
+  "topic_affinity_correlation": -0.22538214827839478,
+  "artifact_layer": "MatrAIx public sample; mixed grounded/synthetic persona records",
+  "node_attribute_layer": "synthetic once assigned to anonymous Higgs nodes",
+  "public_sample_url": "https://huggingface.co/datasets/MatrAIx2026/MatrAIx_Persona_1M_Public_Release/resolve/main/sample/sample.parquet",
+  "public_schema_url": "https://huggingface.co/datasets/MatrAIx2026/MatrAIx_Persona_1M_Public_Release/resolve/main/persona_codes.schema.json",
+  "go_no_go": {
+    "synthetic_sensitivity_experiment": "GO",
+    "empirical_claim_about_2012_higgs_users": "NO-GO"
+  },
+  "reason": "The public sample exposes usable topic, literacy, social-attitude, and personality fields, but it is not a representative sample of Twitter users during the 2012 Higgs event and contains no identity join to graph nodes.",
+  "required_sensitivity_grid": [
+    0.0,
+    0.35,
+    0.7
+  ]
+}
