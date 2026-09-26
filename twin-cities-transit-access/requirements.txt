@@ -1,0 +1,9 @@
+# Python 3.12. r5py also needs a Java 21 JDK (set JAVA_HOME; see README).
+r5py==1.1.7
+geopandas>=1.0
+pandas>=2.2
+pyarrow>=15
+numpy>=1.26
+matplotlib>=3.8
+requests>=2.31
+scikit-learn>=1.4

@@ -15,6 +15,11 @@ figures/
 !successful-india/companion-audit/figures/
 !successful-india/companion-audit/figures/*.png
 
+# Twin Cities transit access: raw + interim data are re-downloadable; outputs are committed
+twin-cities-transit-access/data/raw/
+twin-cities-transit-access/data/interim/
+!twin-cities-transit-access/outputs/*.png
+
 # Derived study outputs
 football-pressing-context/data/*.csv
 football-pressing-context/model_summaries.txt

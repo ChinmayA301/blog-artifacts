@@ -1,0 +1,201 @@
+{
+  "lodes_year": 2023,
+  "departures_used": 120,
+  "jobs_total": 1794825,
+  "workers_total": 1613532,
+  "origin_bgs": 2535,
+  "blocks_with_jobs": 19148,
+  "ao_weighted_score": {
+    "transit": 3661.625051979249,
+    "walk": 1002.7712271975782
+  },
+  "thresholds": {
+    "10": {
+      "transit_ww": 1018,
+      "walk_ww": 950,
+      "transit_share_of_jobs": 0.0006,
+      "walk_share_of_jobs": 0.0005,
+      "transit_over_walk": 1.07,
+      "transit_ww_5min_sample": 1001,
+      "sampling_diff_pct": -1.64
+    },
+    "20": {
+      "transit_ww": 4056,
+      "walk_ww": 2459,
+      "transit_share_of_jobs": 0.0023,
+      "walk_share_of_jobs": 0.0014,
+      "transit_over_walk": 1.65,
+      "transit_ww_5min_sample": 4008,
+      "sampling_diff_pct": -1.16
+    },
+    "30": {
+      "transit_ww": 14785,
+      "walk_ww": 5282,
+      "transit_share_of_jobs": 0.0082,
+      "walk_share_of_jobs": 0.0029,
+      "transit_over_walk": 2.8,
+      "transit_ww_5min_sample": 14640,
+      "sampling_diff_pct": -0.98
+    },
+    "40": {
+      "transit_ww": 37468,
+      "walk_ww": 9501,
+      "transit_share_of_jobs": 0.0209,
+      "walk_share_of_jobs": 0.0053,
+      "transit_over_walk": 3.94,
+      "transit_ww_5min_sample": 37246,
+      "sampling_diff_pct": -0.59
+    },
+    "45": {
+      "transit_ww": 53475,
+      "walk_ww": 11988,
+      "transit_share_of_jobs": 0.0298,
+      "walk_share_of_jobs": 0.0067,
+      "transit_over_walk": 4.46,
+      "transit_ww_5min_sample": 53199,
+      "sampling_diff_pct": -0.52
+    },
+    "50": {
+      "transit_ww": 72882,
+      "walk_ww": 14854,
+      "transit_share_of_jobs": 0.0406,
+      "walk_share_of_jobs": 0.0083,
+      "transit_over_walk": 4.91,
+      "transit_ww_5min_sample": 72570,
+      "sampling_diff_pct": -0.43
+    },
+    "60": {
+      "transit_ww": 115378,
+      "walk_ww": 21000,
+      "transit_share_of_jobs": 0.0643,
+      "walk_share_of_jobs": 0.0117,
+      "transit_over_walk": 5.49,
+      "transit_ww_5min_sample": 115040,
+      "sampling_diff_pct": -0.29
+    }
+  },
+  "dist_30": {
+    "median_bg_transit": 3058,
+    "median_bg_walk": 1843,
+    "worker_weighted_median_transit": 2211,
+    "share_workers_transit_ge_10pct_jobs": 0.0129,
+    "share_workers_transit_lt_1pct_jobs": 0.8225,
+    "share_workers_transit_gain_lt_2x": 0.7039,
+    "share_workers_in_top_decile_bgs": 0.0823,
+    "median_bg_departure_swing": 2221,
+    "median_bg_swing_pct_of_mean": 58.6,
+    "worker_weighted_gain": 9503,
+    "by_county": [
+      {
+        "county": "Hennepin",
+        "workers": 640816,
+        "transit_ww": 27861,
+        "walk_ww": 9407
+      },
+      {
+        "county": "Ramsey",
+        "workers": 260451,
+        "transit_ww": 18342,
+        "walk_ww": 5894
+      },
+      {
+        "county": "Dakota",
+        "workers": 229412,
+        "transit_ww": 2202,
+        "walk_ww": 1565
+      },
+      {
+        "county": "Anoka",
+        "workers": 196647,
+        "transit_ww": 2080,
+        "walk_ww": 1518
+      },
+      {
+        "county": "Washington",
+        "workers": 143568,
+        "transit_ww": 1160,
+        "walk_ww": 1099
+      },
+      {
+        "county": "Scott",
+        "workers": 83286,
+        "transit_ww": 1020,
+        "walk_ww": 1020
+      },
+      {
+        "county": "Carver",
+        "workers": 59352,
+        "transit_ww": 1000,
+        "walk_ww": 1000
+      }
+    ]
+  },
+  "dist_45": {
+    "median_bg_transit": 10486,
+    "median_bg_walk": 5359,
+    "worker_weighted_median_transit": 7135,
+    "share_workers_transit_ge_10pct_jobs": 0.1158,
+    "share_workers_transit_lt_1pct_jobs": 0.6275,
+    "share_workers_transit_gain_lt_2x": 0.6037,
+    "share_workers_in_top_decile_bgs": 0.0836,
+    "median_bg_departure_swing": 15895,
+    "median_bg_swing_pct_of_mean": 55.8,
+    "worker_weighted_gain": 41486,
+    "by_county": [
+      {
+        "county": "Hennepin",
+        "workers": 640816,
+        "transit_ww": 96244,
+        "walk_ww": 21111
+      },
+      {
+        "county": "Ramsey",
+        "workers": 260451,
+        "transit_ww": 77910,
+        "walk_ww": 13981
+      },
+      {
+        "county": "Anoka",
+        "workers": 196647,
+        "transit_ww": 8962,
+        "walk_ww": 3348
+      },
+      {
+        "county": "Dakota",
+        "workers": 229412,
+        "transit_ww": 7747,
+        "walk_ww": 3720
+      },
+      {
+        "county": "Washington",
+        "workers": 143568,
+        "transit_ww": 3299,
+        "walk_ww": 2498
+      },
+      {
+        "county": "Scott",
+        "workers": 83286,
+        "transit_ww": 2297,
+        "walk_ww": 2297
+      },
+      {
+        "county": "Carver",
+        "workers": 59352,
+        "transit_ww": 1894,
+        "walk_ww": 1894
+      }
+    ]
+  },
+  "aggregation_check_walk": {
+    "30": {
+      "bg_dest_ww": 5282,
+      "block_dest_ww": 5106,
+      "diff_pct": 3.45
+    },
+    "45": {
+      "bg_dest_ww": 11988,
+      "block_dest_ww": 11827,
+      "diff_pct": 1.37
+    }
+  }
+}
