@@ -75,6 +75,16 @@ single folder also keeps the original dashboard, 43-claim tracker, exploratory
 scripts, audit memo, and a full 27-state ASER companion analysis with extracted
 CSVs, methods, machine-readable results, and checked figures.
 
+### `twin-cities-transit-access/`
+→ replication exercise: [interactive map](https://chinmaya301.github.io/blog-artifacts/twin-cities-transit-access/) ·
+[one-page PDF](twin-cities-transit-access/outputs/twin_cities_transit_access_onepager.pdf)
+
+A scaled-down rerun of the UMN Accessibility Observatory's *Access Across America*
+transit method for the seven-county Twin Cities region: jobs reachable within 30 and
+45 minutes by transit vs walking, by block group, using Metro Transit GTFS, LODES8
+and r5py. Framed as a method-learning replication, not original research, and
+checked against AO's published Transit 2024 figures for the metro.
+
 ## A note on data provenance
 
 The projects are separated by evidence type, and each subproject's README says
@@ -91,6 +101,10 @@ which type applies:
   `successful-india/companion-audit` (ASER 2024 state tables and official
   Enforcement Directorate pipeline totals; no individual-level or party-coded
   causal inference).
+- **Real public data, method replication:** `twin-cities-transit-access`
+  (Metro Transit GTFS, OpenStreetMap, LEHD LODES8, 2020 TIGER; reproduces a
+  published method at coarser geography and checks the result against the
+  published figures. It is a learning exercise, not a new finding).
 - **Real method, synthetic-but-labeled data:** `signalgraph-fake-stars`,
   `ai-human-detector`, and `media-influence-causality`. The live sources
   (authenticated GitHub API; paired human/AI corpora; assembled influence
