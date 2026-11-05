@@ -1,175 +1,82 @@
 """
-Free node-level BO for influence maximization.
+Stage 3 - free node-level BO, naive (high-dimensional) parameterisation.
 
-Prior variants let BO tune a centrality RULE -> optimum collapsed near top-degree.
-Here BO selects actual nodes, so it can exploit influence-region diversity that
-no degree-ranking rule can express.
-
-Search-space construction:
-  1. Embed candidate nodes into d-dim space via spectral embedding of the
-     retweet graph (Laplacian eigenmaps). Nodes close in this space have
-     correlated influence regions; nodes far apart cover different parts of
-     the graph. This is the geometry diversity needs.
-  2. BO searches K "anchor points" in the d-dim space (K*d continuous dims).
-     Each anchor decodes to its nearest candidate node -> a concrete seed set.
-  3. Objective = IC spread of that seed set (real simulation).
-
-Because anchors can be placed anywhere, BO can build a SPREAD-OUT seed set
-(low influence overlap) or a CLUSTERED one (high degree, high overlap) and
-let the data decide. Baselines: top-degree, CELF, random, and the
-rule-tuning BO winner from the prior run (179.0).
+  1. Candidate pool: top 1500 nodes by out-degree; keep the largest connected
+     component of their induced (undirected) subgraph.
+  2. Spectral-embed that component into D dims (Laplacian eigenmaps).
+  3. BO searches K anchor points in [0,1]^D  ->  K*D continuous dims. Each
+     anchor decodes to its nearest unused embedded node -> a seed set.
+Baseline: the SAME shared global top-degree set used by every stage.
 """
-import pickle, time
+import time
 import numpy as np
 import networkx as nx
 from sklearn.manifold import spectral_embedding
 from sklearn.neighbors import NearestNeighbors
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import Matern, ConstantKernel, WhiteKernel
-from scipy.stats import norm
+from common import *
 
-rng = np.random.default_rng(23)
-H = pickle.load(open('rt_graph.pkl','rb'))
-nodes = np.array(H.nodes())
-succ = {n:list(H.successors(n)) for n in nodes}
-deg = dict(H.out_degree())
-deg_arr = np.array([deg[n] for n in nodes], float)
-K, IC_P, MC = 20, 0.12, 80
+g = load_graph()
+B = shared_baselines(g)
+sim = IC(g, seed=23)
+pad_rng = np.random.default_rng(230)
 
-# ---- candidate pool: top 1500 by degree (where useful seeds live) ----
-pool_idx = np.argpartition(-deg_arr, 1500)[:1500]
-pool = nodes[pool_idx]
-pdeg = deg_arr[pool_idx]
-pos = {n:i for i,n in enumerate(pool)}
-print('pool=%d nodes' % len(pool))
-
-# ---- spectral embedding of the pool's induced subgraph (undirected) ----
-t0=time.time()
-sub = H.subgraph(pool).to_undirected()
-# ensure connected enough for embedding: use largest CC of the subgraph
+pool = g.topk(g.outdeg, 1500)
+sub = g.H.subgraph(g.nodes[pool]).to_undirected()
 cc = max(nx.connected_components(sub), key=len)
 sub_cc = sub.subgraph(cc)
-emb_nodes = np.array(sub_cc.nodes())
-A = nx.to_scipy_sparse_array(sub_cc, nodelist=emb_nodes, format='csr', dtype=float)
+emb_ids = np.array(sub_cc.nodes())
+emb_ix = np.array([g.idx[n] for n in emb_ids])
+A = nx.to_scipy_sparse_array(sub_cc, nodelist=emb_ids, format='csr', dtype=float)
 A.indices = A.indices.astype(np.int32); A.indptr = A.indptr.astype(np.int32)
 D = 6
+t0 = time.time()
 EMB = spectral_embedding(A, n_components=D, random_state=0)
-# normalize embedding dims to [0,1] for BO bounds
 EMB = (EMB - EMB.min(0)) / (np.ptp(EMB, axis=0) + 1e-9)
 nn = NearestNeighbors(n_neighbors=1).fit(EMB)
-print('embedding: %d nodes in %dD (%.1fs)' % (len(emb_nodes), D, time.time()-t0))
+td_in_pool = len(set(B['td_seeds']) & set(emb_ix))
+print('embedding: %d of 1500 pool nodes in %dD (%.1fs); %d/%d top-degree seeds are in it'
+      % (len(emb_ix), D, time.time() - t0, td_in_pool, K))
 
-emb_deg = np.array([deg[n] for n in emb_nodes], float)
-
-def ic_spread(seeds, n_sims=MC):
-    tot=0
-    for _ in range(n_sims):
-        active=set(seeds); fr=list(seeds)
-        while fr:
-            nx_=[]
-            for u in fr:
-                for v in succ[u]:
-                    if v not in active and rng.random()<IC_P:
-                        active.add(v); nx_.append(v)
-            fr=nx_
-        tot+=len(active)
-    return tot/n_sims
-
-def decode(anchor_flat):
-    """K*D vector -> K nearest distinct nodes."""
-    anchors = anchor_flat.reshape(K, D)
-    _, idxs = nn.kneighbors(anchors, n_neighbors=8)
-    seeds=[]; used=set()
+def decode(flat):
+    _, idxs = nn.kneighbors(flat.reshape(K, D), n_neighbors=8)
+    seeds, used = [], set()
     for row in idxs:
         for j in row:
             if j not in used:
-                used.add(j); seeds.append(emb_nodes[j]); break
-    # pad if collisions reduced count
-    while len(seeds)<K:
-        j=rng.integers(len(emb_nodes))
-        if j not in used: used.add(j); seeds.append(emb_nodes[j])
-    return seeds[:K]
+                used.add(j); seeds.append(emb_ix[j]); break
+    while len(seeds) < K:                       # pad if collisions reduced count
+        j = int(pad_rng.integers(len(emb_ix)))
+        if j not in used:
+            used.add(j); seeds.append(emb_ix[j])
+    return np.array(seeds[:K])
 
-def objective(anchor_flat):
-    return ic_spread(decode(anchor_flat))
+def objective(flat):
+    return sim.spread(decode(flat))
 
-DIM = K*D
-def sample(r,n): return r.uniform(0,1,size=(n,DIM))
+DIM = K * D
+def sampler(r, n):
+    return r.uniform(0, 1, size=(n, DIM))
 
-# ---- overlap metric ----
-und = H.to_undirected(); neigh1={n:set(und.neighbors(n)) for n in emb_nodes}
-def overlap_frac(seeds):
-    cover=set(); tot=0
-    for s in seeds:
-        nb=neigh1.get(s,set()); cover|=nb; tot+=len(nb)
-    return 1-(len(cover)/tot if tot else 0)
+N_EVALS, N_INIT, N_RUNS = budget(60), 12, 4
+print('BO vs random search: %d runs x %d evaluations each, %d-D' % (N_RUNS, N_EVALS, DIM))
+bo = run_many('BO', lambda s: run_bo(objective, sampler, N_INIT, N_EVALS, s, n_cand=1500, restarts=1),
+              N_RUNS, 0)
+rs = run_many('RS', lambda s: run_random(objective, sampler, N_EVALS, s), N_RUNS, 300)
 
-# ---- baselines (on embedding node set, for fair comparison) ----
-print('baselines...')
-td=[emb_nodes[i] for i in np.argsort(-emb_deg)[:K]]
-b_td=ic_spread(td,400)
-randv=[ic_spread(list(rng.choice(emb_nodes,K,replace=False)),120) for _ in range(20)]
-b_rand=np.mean(randv); b_rand_std=np.std(randv)
-print('  top-degree=%.1f random=%.1f' % (b_td,b_rand))
+bo_f = reevaluate(bo, decode, sim); rs_f = reevaluate(rs, decode, sim)
+bo_sum = summarize_runs('BO', bo_f, B['td_final'])
+rs_sum = summarize_runs('RS', rs_f, B['td_final'])
 
-# ---- BO vs random search ----
-N_ITERS=60; N_RUNS=4
-def ei(Xs,gp,yb,xi=0.01):
-    mu,sd=gp.predict(Xs,return_std=True); sd=np.maximum(sd,1e-9)
-    imp=mu-yb-xi; z=imp/sd
-    return imp*norm.cdf(z)+sd*norm.pdf(z)
+best = bo[int(np.argmax(bo_f))]
+shared = len(set(best['seeds']) & set(B['td_seeds']))
+test = setlevel_test(sim, best['seeds'], B['td_reps'])
+print('best BO seed set %.1f, shares %d/%d with top-degree; set-level t=%.2f p=%.2g'
+      % (best['final'], shared, K, test['t'], test['p']))
 
-def run_bo(seed):
-    r=np.random.default_rng(seed)
-    X=sample(r,12); y=np.array([objective(x) for x in X])
-    curve=[y.max()]
-    for _ in range(N_ITERS-12):
-        k=ConstantKernel(1.0)*Matern(length_scale=1.0,nu=2.5)+WhiteKernel(noise_level=5.0)
-        gp=GaussianProcessRegressor(kernel=k,normalize_y=True,n_restarts_optimizer=1,random_state=seed)
-        gp.fit(X,y)
-        cand=sample(r,1500); e=ei(cand,gp,y.max())
-        xn=cand[np.argmax(e)]; yn=objective(xn)
-        X=np.vstack([X,xn]); y=np.append(y,yn); curve.append(y.max())
-    return np.array(curve), X[np.argmax(y)], y.max()
-
-def run_rand(seed):
-    r=np.random.default_rng(seed+300); best=-1; c=[]
-    for _ in range(N_ITERS-11):
-        v=objective(sample(r,1)[0]); best=max(best,v); c.append(best)
-    return np.array(c)
-
-print('running free-node BO (%dx%d, %dD search)...' % (N_RUNS,N_ITERS,DIM))
-bo_curves=[]; bo_best=-1; bo_x=None
-for s in range(N_RUNS):
-    c,x,v=run_bo(s); bo_curves.append(c)
-    if v>bo_best: bo_best,bo_x=v,x
-    print('  run %d best=%.1f' % (s,v))
-rand_curves=[run_rand(s) for s in range(N_RUNS)]
-L=min(min(len(c) for c in bo_curves),min(len(c) for c in rand_curves))
-bo_curves=np.array([c[:L] for c in bo_curves]); rand_curves=np.array([c[:L] for c in rand_curves])
-
-bo_seeds=decode(bo_x)
-bo_final=ic_spread(bo_seeds,400)
-shared=len(set(bo_seeds)&set(td))
-print('\nFINAL free-node: top-degree=%.1f BO=%.1f random=%.1f'%(b_td,bo_final,b_rand))
-print('overlap: top-degree=%.2f BO=%.2f | shared seeds=%d/%d'%(overlap_frac(td),overlap_frac(bo_seeds),shared,K))
-
-# significance: 30 high-precision estimates each
-from scipy import stats
-td_s=np.array([ic_spread(td,150) for _ in range(30)])
-bo_s=np.array([ic_spread(bo_seeds,150) for _ in range(30)])
-t,p=stats.ttest_ind(bo_s,td_s)
-print('top-degree %.1f±%.1f  BO %.1f±%.1f  diff=%.1f(%.1f%%) t=%.2f p=%.4f'%(
-    td_s.mean(),td_s.std(),bo_s.mean(),bo_s.std(),
-    bo_s.mean()-td_s.mean(),100*(bo_s.mean()-td_s.mean())/td_s.mean(),t,p))
-
-pickle.dump(dict(bo_curves=bo_curves,rand_curves=rand_curves,
-    b_td=b_td,b_rand=b_rand,b_rand_std=b_rand_std,bo_final=bo_final,
-    td_mean=td_s.mean(),td_std=td_s.std(),bo_mean=bo_s.mean(),bo_std=bo_s.std(),
-    tstat=t,pval=p,shared=shared,
-    ov_td=overlap_frac(td),ov_bo=overlap_frac(bo_seeds),
-    K=K,IC_P=IC_P,DIM=DIM,D=D,pool=len(emb_nodes),
-    prior_ruleBO=179.0,b_celf=149.6,
-    graph_nodes=H.number_of_nodes(),graph_edges=H.number_of_edges()),
-    open('bo_freenode_results.pkl','wb'))
-print('saved.')
+save_stage('bo_freenode_results.pkl', stage=3, label='Free-node, naive (%d-D embedding)' % DIM, dim=DIM, D=D,
+           pool=len(emb_ix), td_in_pool=td_in_pool, baselines=B,
+           bo_curves=np.array([r['curve'] for r in bo]), rs_curves=np.array([r['curve'] for r in rs]),
+           bo_finals=bo_f, rs_finals=rs_f, bo_summary=bo_sum, rs_summary=rs_sum,
+           best_seeds=best['seeds'], best_final=best['final'], shared=shared, setlevel=test,
+           ov_td=audience_overlap(g, B['td_seeds']), ov_bo=audience_overlap(g, best['seeds']),
+           graph_nodes=g.N, graph_edges=g.n_edges)
