@@ -1,155 +1,71 @@
 """
-Engineering Virality with Bayesian Optimization
-Real pipeline on the SNAP Higgs retweet network (largest WCC: 223,833 nodes).
+Stage 1 - rule tuning.
+BO searches a 3-D mixing weight over z-scored centrality rankings
+(out-degree, PageRank, k-core); the seed set is the top-K by blended score.
+Compared against random search with the SAME number of objective evaluations,
+and against fixed heuristics.
 
-Experiment: select a seed set of k=20 nodes to maximize expected influence
-spread under the Independent Cascade (IC) model. We compare:
-  - Random search over seed sets
-  - Bayesian Optimization over a low-dim *strategy* parameterization
-  - Fixed heuristic baselines: top-degree, top-PageRank, top-k-core, random
-BO doesn't search raw node IDs (combinatorial); it searches a continuous
-mixing weight over centrality rankings, which is a realistic, smooth design space.
+Objective (shared by all stages, see common.py): mean IC spread, k=K,
+p=IC_P, MC sims per evaluation.
 """
-import gzip, pickle, time
 import numpy as np
 import networkx as nx
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import Matern, ConstantKernel, WhiteKernel
-from scipy.stats import norm
+from common import *
 
-rng = np.random.default_rng(7)
-H = pickle.load(open('rt_graph.pkl','rb'))
-nodes = np.array(H.nodes())
-N = len(nodes)
-K = 20          # seed budget
-IC_P = 0.05     # IC activation probability per edge
-MC = 60         # Monte Carlo cascades per evaluation (noisy objective -> good for BO)
+g = load_graph()
+B = shared_baselines(g)
+sim = IC(g, seed=7)
 
-# ---- Precompute centrality rankings (the design basis) ----
-t0 = time.time()
-deg = dict(H.out_degree())
-deg_arr = np.array([deg[n] for n in nodes], dtype=float)
-pr = nx.pagerank(H, alpha=0.85, max_iter=50, tol=1e-4)
-pr_arr = np.array([pr[n] for n in nodes], dtype=float)
-core = nx.core_number(H.to_undirected())
-core_arr = np.array([core[n] for n in nodes], dtype=float)
-print('centralities computed in %.1fs' % (time.time()-t0))
+# Centrality basis. Out-degree = number of retweeters. PageRank is computed on
+# the ENDORSEMENT graph (retweeter -> retweeted, i.e. H reversed) so it ranks
+# accounts that are retweeted by well-retweeted accounts - the influence
+# reading of PageRank. On the diffusion graph itself it would rank sinks.
+pr = nx.pagerank(g.H.reverse(copy=False), alpha=0.85, max_iter=100, tol=1e-6)
+pr_arr = np.array([pr[n] for n in g.nodes])
+core = nx.core_number(g.H.to_undirected())
+core_arr = np.array([core[n] for n in g.nodes], float)
 
-def zscore(x):
-    s = x.std()
-    return (x - x.mean()) / (s if s>0 else 1.0)
-Zd, Zp, Zc = zscore(deg_arr), zscore(pr_arr), zscore(core_arr)
+def z(x):
+    s = x.std(); return (x - x.mean()) / (s if s > 0 else 1.0)
+Zd, Zp, Zc = z(g.outdeg), z(pr_arr), z(core_arr)
 
-# adjacency for fast IC
-succ = {n:list(H.successors(n)) for n in nodes}
-node_index = {n:i for i,n in enumerate(nodes)}
-
-def independent_cascade(seed_nodes, n_sims=MC):
-    """Return mean activated count over n_sims IC runs."""
-    totals = 0
-    for _ in range(n_sims):
-        active = set(seed_nodes)
-        frontier = list(seed_nodes)
-        while frontier:
-            nxt = []
-            for u in frontier:
-                for v in succ[u]:
-                    if v not in active and rng.random() < IC_P:
-                        active.add(v); nxt.append(v)
-            frontier = nxt
-        totals += len(active)
-    return totals / n_sims
-
-def seeds_from_weights(w):
-    """Map a 3-vector of weights -> top-K nodes by blended centrality score."""
+def decode(w):
     w = np.clip(w, 0, 1)
-    score = w[0]*Zd + w[1]*Zp + w[2]*Zc
-    top = np.argpartition(-score, K)[:K]
-    return [nodes[i] for i in top]
+    return g.topk(w[0] * Zd + w[1] * Zp + w[2] * Zc)
 
 def objective(w):
-    return independent_cascade(seeds_from_weights(w))
+    return sim.spread(decode(w))
 
-# ---- Fixed heuristic baselines ----
-def topk_by(arr):
-    idx = np.argpartition(-arr, K)[:K]
-    return [nodes[i] for i in idx]
+def sampler(r, n):
+    return r.uniform(0, 1, size=(n, 3))
 
-print('evaluating heuristic baselines...')
-base_results = {}
-for name, seeds in [
-    ('Top-degree',  topk_by(deg_arr)),
-    ('Top-PageRank',topk_by(pr_arr)),
-    ('Top-k-core',  topk_by(core_arr)),
-]:
-    vals = [independent_cascade(seeds, n_sims=200) for _ in range(1)]
-    base_results[name] = independent_cascade(seeds, n_sims=400)
-# random seed baseline: average of many random sets
-rand_vals = [independent_cascade(list(rng.choice(nodes, K, replace=False)), n_sims=120) for _ in range(25)]
-base_results['Random seeds'] = np.mean(rand_vals)
-base_results['_random_std'] = np.std(rand_vals)
-print('baselines:', {k:round(v,1) for k,v in base_results.items()})
+heur = {'Top-degree': B['td_final'],
+        'Top-PageRank': sim.spread(g.topk(pr_arr), FINAL_SIMS),
+        'Top-k-core': sim.spread(g.topk(core_arr), FINAL_SIMS),
+        'Random seeds': B['rand_mean']}
+print('heuristics:', {k: round(v, 1) for k, v in heur.items()})
 
-# ---- Random search vs BO, multiple seeds for confidence bands ----
-N_ITERS = 40
-N_RUNS  = 5
-bounds = np.array([[0,1],[0,1],[0,1]])
+N_EVALS, N_INIT, N_RUNS = budget(40), 5, 5
+print('BO vs random search: %d runs x %d evaluations each' % (N_RUNS, N_EVALS))
+bo = run_many('BO', lambda s: run_bo(objective, sampler, N_INIT, N_EVALS, s,
+                                     kernel=default_kernel(0.5), n_cand=800), N_RUNS, 0)
+rs = run_many('RS', lambda s: run_random(objective, sampler, N_EVALS, s), N_RUNS, 100)
 
-def expected_improvement(Xs, gp, y_best, xi=0.01):
-    mu, sd = gp.predict(Xs, return_std=True)
-    sd = np.maximum(sd, 1e-9)
-    imp = mu - y_best - xi
-    z = imp/sd
-    return imp*norm.cdf(z) + sd*norm.pdf(z)
+bo_f = reevaluate(bo, decode, sim); rs_f = reevaluate(rs, decode, sim)
+bo_sum = summarize_runs('BO', bo_f, B['td_final'])
+rs_sum = summarize_runs('RS', rs_f, B['td_final'])
 
-def run_bo(seed):
-    r = np.random.default_rng(seed)
-    X = r.uniform(0,1,size=(5,3))                 # initial design
-    y = np.array([objective(x) for x in X])
-    best_curve = [y.max()]
-    for it in range(N_ITERS-5):
-        kernel = ConstantKernel(1.0)*Matern(length_scale=0.5, nu=2.5) + WhiteKernel(noise_level=5.0)
-        gp = GaussianProcessRegressor(kernel=kernel, normalize_y=True, n_restarts_optimizer=2, random_state=seed)
-        gp.fit(X, y)
-        cand = r.uniform(0,1,size=(800,3))
-        ei = expected_improvement(cand, gp, y.max())
-        x_next = cand[np.argmax(ei)]
-        y_next = objective(x_next)
-        X = np.vstack([X, x_next]); y = np.append(y, y_next)
-        best_curve.append(y.max())
-    return np.array(best_curve), X[np.argmax(y)], y.max()
+best = bo[int(np.argmax(bo_f))]
+shared = len(set(best['seeds']) & set(B['td_seeds']))
+test = setlevel_test(sim, best['seeds'], B['td_reps'])
+print('best BO seed set: %.1f, shares %d/%d seeds with top-degree; set-level Welch t=%.2f p=%.2g'
+      % (best['final'], shared, K, test['t'], test['p']))
 
-def run_random(seed):
-    r = np.random.default_rng(seed+100)
-    best_curve=[]; best=-1
-    for it in range(N_ITERS-4):
-        v = objective(r.uniform(0,1,size=3))
-        best = max(best, v); best_curve.append(best)
-    return np.array(best_curve)
-
-print('running BO (%d runs x %d iters)...' % (N_RUNS, N_ITERS))
-bo_curves=[]; bo_best_w=None; bo_best_val=-1
-for s in range(N_RUNS):
-    c, w, v = run_bo(s)
-    bo_curves.append(c)
-    if v>bo_best_val: bo_best_val, bo_best_w = v, w
-    print('  BO run %d: best=%.1f w=%s' % (s, v, np.round(w,2)))
-rand_curves=[run_random(s) for s in range(N_RUNS)]
-
-# align curve lengths
-L = min(min(len(c) for c in bo_curves), min(len(c) for c in rand_curves))
-bo_curves=np.array([c[:L] for c in bo_curves])
-rand_curves=np.array([c[:L] for c in rand_curves])
-
-# BO's discovered seed set, evaluated at high precision
-bo_seeds = seeds_from_weights(bo_best_w)
-bo_final = independent_cascade(bo_seeds, n_sims=400)
-print('BO best weights:', np.round(bo_best_w,3), '-> spread=%.1f' % bo_final)
-
-pickle.dump({
-    'bo_curves':bo_curves,'rand_curves':rand_curves,
-    'base_results':base_results,'bo_final':bo_final,
-    'bo_best_w':bo_best_w,'K':K,'IC_P':IC_P,'N':N,
-    'graph_nodes':H.number_of_nodes(),'graph_edges':H.number_of_edges(),
-}, open('bo_results.pkl','wb'))
-print('saved.')
+save_stage('bo_results.pkl', stage=1, label='Rule-tuning (3-D centrality blend)', dim=3,
+           heur=heur, baselines=B,
+           bo_curves=np.array([r['curve'] for r in bo]), rs_curves=np.array([r['curve'] for r in rs]),
+           bo_finals=bo_f, rs_finals=rs_f, bo_summary=bo_sum, rs_summary=rs_sum,
+           best_w=best['best_x'], best_seeds=best['seeds'], best_final=best['final'],
+           shared=shared, setlevel=test,
+           ov_td=audience_overlap(g, B['td_seeds']), ov_bo=audience_overlap(g, best['seeds']),
+           graph_nodes=g.N, graph_edges=g.n_edges)
