@@ -3,7 +3,7 @@
 > A country winning at everything except the things that compound.
 
 This folder is the complete research package for
-[Successful India™](https://app.chinmayarora.com/blog/metric-substitution-audit/).
+[Successful India™](https://app.chinmayarora.com/blog/succesful-india/).
 The data essay is the primary study. The audit, scripts, source tracker,
 full-panel ASER analysis, and interactive dashboard are companion evidence
 that make its claims inspectable and falsifiable.

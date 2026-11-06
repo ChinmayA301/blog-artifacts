@@ -15,7 +15,7 @@ company's own S-1 filings and FT reporting.
 |---|---|
 | `forecast_cagr_waterfall.png` | Decomposes the 100× build into yearly increments; the bulk lands in 2029–30. |
 | `forecast_path_comparison.png` | Goldman's front-then-back-loaded path vs. a constant-CAGR path — where the forecast hides its mass. |
-| `forecast_monte_carlo.png` | 200k correlated draws over price/utilisation/adoption multipliers; ~70% of outcomes fall below the $322B headline. |
+| `forecast_monte_carlo.png` | 200k draws over price/utilisation/adoption multipliers centred at 1.0, correlated vs independent. The headline sits near the median; correlation widens P10–P90 from ~$187–473B to ~$154–563B. |
 
 ## Reproducing
 
@@ -26,8 +26,13 @@ python generate_figures.py
 
 ## Caveat
 
-The Monte Carlo priors (means set below 1.0, the correlation structure) are
-grounded in the documented historical tendency of AI forecasts to overshoot,
-but they are assumptions, not findings — the figure caption states this. To
-harden the result, recalibrate the overshoot multipliers to a specific
-historical forecast cohort.
+The Monte Carlo multipliers are centred at 1.0, so the simulation assumes no
+bias in the forecast; the spreads and the correlation structure are
+illustrative assumptions, not findings. What the figure isolates is the effect
+of correlation between drivers.
+
+**Correction (Nov 2026).** An earlier version set the multipliers' means below
+1.0 "to reflect the tendency of AI forecasts to overshoot" and then reported
+that ~70% of outcomes fell below the headline. That result was the prior, not
+a finding, and the justification conflicted with the post's own evidence that
+market-level AI forecasts had undershot.
