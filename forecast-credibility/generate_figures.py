@@ -125,26 +125,36 @@ print('fig2 done')
 rng = np.random.default_rng(42)
 N = 200_000
 
-# Multiplicative factors on the headline endpoint. Means centered slightly
-# below 1.0 to reflect the documented historical tendency of AI forecasts
-# to overshoot (2017 cohort undershot realized by 6-8x => forecasts ran hot).
-# Correlated because a soft-demand world hits price AND utilisation together.
-mean = np.array([0.92, 0.90, 0.95])          # price, utilisation, adoption-timing
+# Multiplicative factors on the headline endpoint, CENTRED AT 1.0: the
+# simulation does not assume the forecast is too high or too low. (An earlier
+# version set the means below 1.0 and then reported that most outcomes fell
+# below the headline -- that result was the prior, not a finding.)
+# What the figure isolates is CORRELATION: a soft-demand world hits price AND
+# utilisation together, so we compare correlated draws with independent ones.
+mean = np.array([1.00, 1.00, 1.00])          # price, utilisation, adoption-timing
 sd   = np.array([0.18, 0.20, 0.22])
-# correlation: price & utilisation strongly co-move; adoption moderately
 corr = np.array([[1.00, 0.65, 0.40],
                  [0.65, 1.00, 0.45],
                  [0.40, 0.45, 1.00]])
-cov = np.outer(sd, sd) * corr
-draws = rng.multivariate_normal(mean, cov, size=N)
-draws = np.clip(draws, 0.05, None)            # no negative multipliers
-terminal = end * draws.prod(axis=1)
 
+def simulate(c):
+    d = rng.multivariate_normal(mean, np.outer(sd, sd) * c, size=N)
+    return end * np.clip(d, 0.05, None).prod(axis=1)
+
+terminal = simulate(corr)
+indep = simulate(np.eye(3))
 p10, p50, p90 = np.percentile(terminal, [10, 50, 90])
+i10, i50, i90 = np.percentile(indep, [10, 50, 90])
+share_below = (terminal < end).mean() * 100
+share_below_70 = (terminal < 0.7 * end).mean() * 100
+indep_below_70 = (indep < 0.7 * end).mean() * 100
 
 fig, ax = plt.subplots(figsize=(11, 6))
-ax.hist(terminal, bins=140, range=(0, 700), color=BLUE, alpha=0.78, edgecolor='white', linewidth=0.2)
-for val, lab, col in [(p10,'P10',GREEN),(p50,'P50 (median)',INK),(p90,'P90',GREEN)]:
+ax.hist(indep, bins=140, range=(0, 800), color=MUTE, alpha=0.45, edgecolor='white', linewidth=0.2,
+        label='Independent drivers')
+ax.hist(terminal, bins=140, range=(0, 800), color=BLUE, alpha=0.7, edgecolor='white', linewidth=0.2,
+        label='Correlated drivers')
+for val, lab, col in [(p10, 'P10', GREEN), (p90, 'P90', GREEN)]:
     ax.axvline(val, color=col, ls='--', lw=1.6)
     ax.text(val, ax.get_ylim()[1]*0.96, f'{lab}\n${val:.0f}B', color=col,
             ha='center', va='top', fontsize=8.5,
@@ -152,19 +162,21 @@ for val, lab, col in [(p10,'P10',GREEN),(p50,'P50 (median)',INK),(p90,'P90',GREE
 ax.axvline(end, color=RED, lw=2.2)
 ax.text(end, ax.get_ylim()[1]*0.55, f'  Headline\n  ${end:.0f}B', color=RED,
         ha='left', va='center', fontsize=9, fontweight='bold')
-
 ax.set_xlabel('2030 terminal AI revenue ($B)')
 ax.set_ylabel('Simulated frequency')
-ax.set_title('Monte Carlo: the headline sits in the upper tail of its own assumptions', loc='left')
+ax.set_title('Monte Carlo: correlated drivers widen the range around the headline', loc='left')
+ax.legend(loc='upper right', frameon=True, fontsize=9)
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
-ax.set_xlim(0, 700)
-share_below = (terminal < end).mean() * 100
+ax.set_xlim(0, 800)
 ax.text(0.0, -0.16,
-        f'200,000 draws over correlated price / utilisation / adoption-timing multipliers (means set below 1.0 to reflect the documented\n'
-        f'tendency of AI forecasts to overshoot). {share_below:.0f}% of simulated outcomes fall below the $322B headline. Illustrative priors, not a prediction.',
+        f'200,000 draws; each multiplier centred at 1.0 (no assumed bias). Correlated P10-P90: \\${p10:.0f}B-\\${p90:.0f}B vs '
+        f'\\${i10:.0f}B-\\${i90:.0f}B if independent.\n'
+        f'Chance of landing 30%+ below the headline: {share_below_70:.0f}% correlated vs {indep_below_70:.0f}% independent. '
+        f'Illustrative priors, not a prediction.',
         transform=ax.transAxes, fontsize=8.5, color=MUTE, va='top')
 plt.tight_layout()
 plt.savefig(f'{OUT}/forecast_monte_carlo.png', bbox_inches='tight')
 plt.close()
-print('fig3 done | P10/P50/P90 =', round(p10), round(p50), round(p90), '| % below headline =', round(share_below,1))
+print('fig3 done | corr P10/P50/P90 =', round(p10), round(p50), round(p90), '| indep =', round(i10), round(i50), round(i90),
+      '| % below headline =', round(share_below,1), '| % >30% below: corr', round(share_below_70,1), 'indep', round(indep_below_70,1))
