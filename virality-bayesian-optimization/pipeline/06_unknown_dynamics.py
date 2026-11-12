@@ -37,12 +37,25 @@ update a Gamma posterior per account: S_u ~ Poisson(c_u * M_u), prior
 Gamma(a, a / c), i.e. they know the aggregate calibration and the dispersion,
 not which accounts are strong.
 
+Damped adopters (DELTA, default 1.0 = the original model): the manufactured-virality
+follow-up (PHASE_A.md, A1) found the undamped weighted cascade too viral downstream against
+reconstructed real Higgs cascades (32% of adopters at depth 1 vs 71% real). With DELTA < 1,
+transmission from adopters (generation >= 1) is DELTA * p_uv; seeds' own edges keep p_uv.
+DELTA = 0.4 is the value chosen there. Under damping:
+  - the greedy oracle's second-hop term becomes DELTA * h_v;
+  - learners model damping explicitly: an adopter's tried edge contributes DELTA * w to its
+    exposure mass M_u (expected hits DELTA * c_u * w), a seed's edge contributes w. The agent
+    is assumed to know DELTA, like it knows c (both are aggregate calibrations). At DELTA = 1
+    this is exactly the original update;
+  - the CELF check uses coupled live-edge snapshots (seed-live if r < p, adopter-live if
+    r < DELTA * p), whose reach is still a coverage function, so lazy greedy stays valid.
+
 Greedy oracle (fast): marginal gain of u = sum over followers v of
 P(v not yet reached) * p_uv * (1 + h_v), with h_v = sum_w p_vw the expected
 direct reach of v. A two-hop approximation, fine for shallow cascades (observed
 depth 0.056); checked against snapshot CELF below.
 
-Outputs: unknown_dynamics.pkl (pipeline/), printed summary.
+Outputs: unknown_dynamics[_gamma][_d<DELTA>].pkl (pipeline/), printed summary; e.g. DELTA=0.4 -> _d04.
 """
 import os, sys, gzip, time, pickle, json
 import numpy as np
@@ -58,6 +71,8 @@ T = 12 if QUICK else int(os.environ.get('T', 50))
 N_RUNS = 2 if QUICK else int(os.environ.get('N_RUNS', 5))
 POOL = 3000
 EVAL_SIMS = 100 if QUICK else 300
+DELTA = float(os.environ.get('DELTA', 1.0))            # adopter damping; 1.0 = original model
+DTAG = '' if DELTA == 1.0 else '_d' + ('%g' % DELTA).replace('.', '')
 t_start = time.time()
 
 cal = json.load(open(CALIBRATION_JSON))
@@ -71,6 +86,7 @@ w_e = 1.0 / np.maximum(followees, F)[g.indices]          # per-edge attention we
 mass = np.bincount(src, weights=w_e, minlength=n)        # M_u if every follower is exposed
 pool = g.topk(g.outdeg, POOL)
 print('graph %d nodes / %d edges; F=%d c=%.3f; T=%d rounds x %d runs' % (n, m, F, C, T, N_RUNS))
+if DELTA != 1.0: print('adopter damping DELTA=%g' % DELTA)
 
 # ---------------------------------------------------- W2: per-account c_u from data
 pos = np.full(int(g.nodes.max()) + 1, -1, np.int64); pos[g.nodes] = np.arange(n)
@@ -122,19 +138,25 @@ def eprob(c):
 
 def cascade(ep, seeds, rng):
     """One IC cascade. Returns (size, S, M): per-source coin successes and exposure mass
-    over the edges each activated source tried (targets inactive at that step)."""
+    over the edges each activated source tried (targets inactive at that step).
+    Adopters (generation >= 1) transmit at DELTA * ep and count DELTA * w toward M."""
     indptr, indices = g.indptr, g.indices
     on = np.zeros(n, bool); seeds = np.unique(seeds); on[seeds] = True
-    S = np.zeros(n); M = np.zeros(n); frontier = seeds; size = seeds.size
+    S = np.zeros(n); M = np.zeros(n); frontier = seeds; size = seeds.size; gen = 0
     while frontier.size:
         st, en = indptr[frontier], indptr[frontier + 1]; ln = en - st; tot = int(ln.sum())
         if tot == 0: break
         offs = np.repeat(st - (np.cumsum(ln) - ln), ln) + np.arange(tot)
         tg = indices[offs]; fresh = ~on[tg]; offs, tg = offs[fresh], tg[fresh]
         par = src[offs]
-        hit = rng.random(offs.size) < ep[offs]
-        np.add.at(M, par, w_e[offs]); np.add.at(S, par[hit], 1)
-        new = np.unique(tg[hit]); on[new] = True; size += new.size; frontier = new
+        if gen == 0 or DELTA == 1.0:
+            hit = rng.random(offs.size) < ep[offs]
+            np.add.at(M, par, w_e[offs])
+        else:
+            hit = rng.random(offs.size) < DELTA * ep[offs]
+            np.add.at(M, par, DELTA * w_e[offs])
+        np.add.at(S, par[hit], 1)
+        new = np.unique(tg[hit]); on[new] = True; size += new.size; frontier = new; gen += 1
     return size, S, M
 
 # ---------------------------------------------------- fast greedy oracle
@@ -148,13 +170,50 @@ def greedy(c):
     h = np.bincount(src, weights=ep, minlength=n)                  # expected direct reach
     pp = np.minimum(1.0, np.repeat(c[pool], np.diff(pool_ptr)) * pool_w)
     Pm = sp.csr_matrix((pp, pool_tgt, pool_ptr), shape=(POOL, n))
-    val = 1.0 + h; notr = np.ones(n); chosen = []; avail = np.ones(POOL, bool)
+    val = 1.0 + (h if DELTA == 1.0 else DELTA * h); notr = np.ones(n); chosen = []; avail = np.ones(POOL, bool)
     for _ in range(K):
         gain = Pm @ (notr * val) + notr[pool]
         gain[~avail] = -1; j = int(np.argmax(gain)); avail[j] = False; chosen.append(pool[j])
         sl = slice(pool_ptr[j], pool_ptr[j + 1])
         notr[pool_tgt[sl]] *= 1 - pp[sl]; notr[pool[j]] = 0
     return np.array(chosen)
+
+def celf_damped(ep, pool, n_worlds=100, seed=777):
+    """Snapshot CELF for the damped cascade. Each world draws one uniform per edge; an edge is
+    seed-live if r < ep and adopter-live if r < DELTA * ep (so adopter-live is a subset).
+    Reach of S = S + adopter-closure of S's seed-live followers = union over u in S of
+    R(u) = {u} + closure(seed-live(u)): a coverage function, so lazy greedy is valid."""
+    import heapq
+    r = np.random.default_rng(seed); worlds = []
+    for _ in range(n_worlds):
+        u_ = r.random(m); sl = u_ < ep; al = u_ < DELTA * ep
+        sp_ = np.zeros(n + 1, np.int64); np.cumsum(np.bincount(src[sl], minlength=n), out=sp_[1:])
+        ap_ = np.zeros(n + 1, np.int64); np.cumsum(np.bincount(src[al], minlength=n), out=ap_[1:])
+        worlds.append((sp_, g.indices[sl], ap_, g.indices[al]))
+    covered = np.zeros((n_worlds, n), bool)
+
+    def gain(u, commit=False):
+        tot = 0
+        for w, (sp_, si, ap_, ai) in enumerate(worlds):
+            cov = covered[w]
+            seen = {u}; stack = []
+            for y in si[sp_[u]:sp_[u + 1]]:
+                if y not in seen: seen.add(y); stack.append(y)
+            while stack:
+                x = stack.pop()
+                for y in ai[ap_[x]:ap_[x + 1]]:
+                    if y not in seen: seen.add(y); stack.append(y)
+            new = [x for x in seen if not cov[x]]
+            tot += len(new)
+            if commit: cov[new] = True
+        return tot / n_worlds
+
+    heap = [(-gain(int(u)), int(u), 0) for u in pool]; heapq.heapify(heap); S = []
+    while len(S) < K:
+        neg, u, it = heapq.heappop(heap)
+        if it == len(S): gain(u, commit=True); S.append(u)
+        else: heapq.heappush(heap, (-gain(u), u, len(S)))
+    return np.array(S), None
 
 def expected(ep, seeds, rng, sims=EVAL_SIMS):
     return float(np.mean([cascade(ep, seeds, rng)[0] for _ in range(sims)]))
@@ -211,9 +270,12 @@ for wname, c_true in WORLDS.items():
     print('reference sets (%d sims): ' % (3 * EVAL_SIMS) + ', '.join('%s %.0f' % kv for kv in ref.items())
           + ' [%.0fs]' % (time.time() - t0))
     # check the fast oracle against snapshot CELF under the true model
-    g.eprob = ep_true
-    celf_set, _ = celf_snapshot(g, pool, n_worlds=30 if QUICK else 100)
-    g.eprob = None
+    if DELTA == 1.0:
+        g.eprob = ep_true
+        celf_set, _ = celf_snapshot(g, pool, n_worlds=30 if QUICK else 100)
+        g.eprob = None
+    else:
+        celf_set, _ = celf_damped(ep_true, pool, n_worlds=30 if QUICK else 100)
     ref['celf'] = expected(ep_true, celf_set, r, 3 * EVAL_SIMS)
     print('  CELF (snapshot, true model) %.0f; oracle %.0f; oracle/CELF %.4f; oracle&top-degree share %d/%d'
           % (ref['celf'], ref['oracle'], ref['oracle'] / ref['celf'], len(set(oracle_set) & set(td_set)), K))
@@ -231,5 +293,6 @@ for wname, c_true in WORLDS.items():
     results[wname] = W
 
 out = dict(results=results, T=T, N_RUNS=N_RUNS, K=K, F=F, C=C, ALPHA=ALPHA, POOL=POOL, EVAL_SIMS=EVAL_SIMS, QUICK=QUICK)
-pickle.dump(out, open(os.path.join(HERE, 'unknown_dynamics%s%s.pkl' % ('_gamma' if GAMMAS else '', '_quick' if QUICK else '')), 'wb'))
+if DELTA != 1.0: out['DELTA'] = DELTA                   # default pickle keeps its original keys
+pickle.dump(out, open(os.path.join(HERE, 'unknown_dynamics%s%s%s.pkl' % ('_gamma' if GAMMAS else '', DTAG, '_quick' if QUICK else '')), 'wb'))
 print('saved; total %.0fs' % (time.time() - t_start))
