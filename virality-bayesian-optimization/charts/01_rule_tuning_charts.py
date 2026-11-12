@@ -40,7 +40,7 @@ save('bo_seeding_comparison.png')
 # ---- FIG 3: learned weights ----
 w = np.clip(R['best_w'], 0, 1); wv = w / w.sum() if w.sum() else w
 fig, ax = plt.subplots(figsize=(11, 6))
-bars = ax.bar(['Out-degree\n(# retweeters)', 'PageRank', 'k-core'], wv,
+bars = ax.bar(['Out-degree\n(%s)' % DEG_LABEL, 'PageRank', 'k-core'], wv,
               color=[GREEN, ORANGE, PURPLE], edgecolor='white', alpha=0.9, width=0.55)
 for b, v in zip(bars, wv):
     ax.text(b.get_x() + b.get_width() / 2, v + 0.01, f'{v:.0%}', ha='center', va='bottom', fontsize=11)

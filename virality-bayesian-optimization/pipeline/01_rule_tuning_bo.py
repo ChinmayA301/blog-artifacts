@@ -20,10 +20,8 @@ sim = IC(g, seed=7)
 # the ENDORSEMENT graph (retweeter -> retweeted, i.e. H reversed) so it ranks
 # accounts that are retweeted by well-retweeted accounts - the influence
 # reading of PageRank. On the diffusion graph itself it would rank sinks.
-pr = nx.pagerank(g.H.reverse(copy=False), alpha=0.85, max_iter=100, tol=1e-6)
-pr_arr = np.array([pr[n] for n in g.nodes])
-core = nx.core_number(g.H.to_undirected())
-core_arr = np.array([core[n] for n in g.nodes], float)
+pr_arr = pagerank_endorsement(g)
+core_arr = coreness(g)
 
 def z(x):
     s = x.std(); return (x - x.mean()) / (s if s > 0 else 1.0)

@@ -10,8 +10,8 @@ Code behind the figures in
 > the direction information actually flows. "Top-degree" meant "retweeted the
 > most", not "was retweeted the most". The bug is fixed and every number below
 > comes from a full rerun. **The earlier headline (BO beats top-degree by
-> +2.5% / +4.5%) does not survive the fix.** The published posts still quote the old
-> numbers and need updating. See [Changes in the rerun](#changes-in-the-rerun).
+> +2.5% / +4.5%) does not survive the fix.** The published posts were corrected on 5 Nov
+> 2026. See [Changes in the rerun](#changes-in-the-rerun).
 
 Influence maximization under the Independent Cascade (IC) model on the SNAP
 Higgs **retweet** network (largest weakly-connected component: 223,833 nodes /
@@ -64,6 +64,131 @@ Controls:
 What it does **not** support: any claim that BO, diversity or redundancy
 penalties improve on top-degree for this graph.
 
+## Follower-graph validation and rerun (Nov 2026)
+
+The study above simulates diffusion over the retweet graph, whose edges are
+retweets that already happened. [`validation/`](validation/README.md) checks the
+simulator against the real Higgs activity log and the follower (exposure) graph,
+then reruns all four stages on the follower graph.
+
+- **Substrate.** 59% of retweets travel along follow edges. On the follower graph the
+  top-20 accounts' audiences overlap 44–65%, against 13% on the retweet graph.
+- **Calibration and held-out test.** A weighted cascade (p_uv = c / max(followees(v), F))
+  is calibrated on 1–3 July and tested from 4 July. Out of sample it reproduces cascade
+  depth (0.053 vs 0.056 observed) but under-predicts spread about 4.7×, because
+  transmissibility tripled at the announcement.
+- **A crawl artifact that optimisers exploit.** Without the floor (F = 1), 33k users who
+  appear to follow a single account make node 1 look like a 12k-node spreader. It was
+  never retweeted. CELF and BO then "beat" top-degree by +45% and +43%, almost entirely
+  by adding node 1. The floor F = 20 was chosen by out-of-sample fit before rerunning.
+- **Per-account check.** No model variant ranks candidate accounts better than raw
+  follower count (Spearman ≈ 0.5; 8 of the top 20 in the observed top 20, same as
+  top-degree).
+
+Rerun on the follower graph with F = 20 ([`RESULTS_follower_wc_F20.md`](RESULTS_follower_wc_F20.md)):
+
+| | vs top-degree |
+|---|---|
+| CELF | +0.67% |
+| Stage 1, rule-tuning BO | −0.12% (random search −0.69%) |
+| Stage 2, rules + redundancy BO | +0.36% (random search +0.34%) |
+| Stage 3, naive free-node BO | −92% |
+| Stage 4, constrained free-node BO | −0.32% (0/5 runs above the decoder-only control) |
+
+**Conclusion: on the better-validated simulator, top-degree is still within 1% of the
+best seeding found, and BO adds nothing over random search in the rule spaces.** Heavy
+audience overlap costs little here because per-exposure activation probabilities are
+small, so a follower being reached twice is rare.
+
+![Substrate comparison](validation/substrate_comparison.png)
+
+## Stage 6: when does a sample-efficient method win? (Nov 2026)
+
+Stages 1–5 sit in one corner of the problem: the spread model is **known** and
+scoring a seed set is **cheap** (a simulation). That corner favours greedy, which has a
+near-optimality guarantee for submodular spread (Kempe, Kleinberg & Tardos 2003), and it
+is why nothing beat top-degree. Stage 6 ([`pipeline/06_unknown_dynamics.py`](pipeline/06_unknown_dynamics.py))
+moves to the opposite corner. Each account's transmissibility is **unknown**, and every
+evaluation is **one real campaign** (one cascade), run over 50 rounds. This is the
+online influence-maximization setting: combinatorial bandits with probabilistically
+triggered arms (Chen, Wang, Yuan & Wang, JMLR 2016, which corrects the IM claim in their
+ICML 2013 paper) and semi-bandit feedback (Wen et al., NeurIPS 2017). Here it runs with
+per-account parameter sharing so it scales to the 14.9M-edge follower graph.
+
+**Worlds.** All use p_uv = c_u / max(followees(v), 20) on the follower graph.
+- **W1:** every c_u = 0.726, the calibrated value.
+- **W2:** per-account c_u estimated from each account's real retweet yield that week,
+  shrunk toward 0.726 with a gamma-Poisson prior fitted by marginal likelihood. The
+  estimate covers only accounts that posted; the rest keep 0.726.
+- **W3:** W2's evidence with 10× stronger shrinkage.
+- **Dose-response worlds:** heterogeneity scaled directly, c_u ∝ (c_u^W2)^γ, renormalised
+  to the same aggregate.
+
+W2 is a plausible scenario shaped by the data, not measured truth. A realised retweet
+yield mixes transmissibility with luck.
+
+**Policies.** Each chooses 20 seeds per round.
+- **Greedy with the true model:** known dynamics, the reference.
+- **Top-degree.**
+- **Greedy with aggregate calibration only.**
+- **CUCB and Thompson sampling:** both learn per-account rates from edge-level feedback,
+  starting from the aggregate calibration.
+- **GP-EI BO over the stage-1 centrality blend:** one cascade per evaluation.
+
+The fast greedy oracle is checked against snapshot CELF on the true model and lands
+within 0.7% in every world. Five runs per policy; all numbers are in
+[`RESULTS_unknown_dynamics.md`](RESULTS_unknown_dynamics.md).
+
+| Reach vs top-degree, same world | W1 equal accounts | W2 rates as in data |
+|---|---|---|
+| Headroom: greedy with the true model | +0.3% | +15.1% |
+| Greedy with aggregate calibration only | +0.2% | −5.1% |
+| CUCB, first 10 rounds / all 50 / final seed set | −5.2% / −3.3% / +0.7% | +6.3% / +12.9% / +15.5% |
+| Thompson, first 10 rounds / all 50 / final seed set | −16.8% / −5.8% / −0.7% | +3.5% / +11.9% / +14.9% |
+| BO over centrality blend, all 50 rounds | −1.4% | −3.2% |
+| CUCB passes top-degree in cumulative reach | never | round 2 |
+
+![Unknown dynamics](results/unknown_dynamics.png)
+
+**Dose-response.** Adaptive learning beats top-degree over a 50-round campaign only once
+the headroom exceeds about 3%. In W3, γ = 0.25 is roughly break-even. Exploration costs
+a few percent up front, and the gain scales with how much accounts really differ.
+
+| γ (0 = W1, 1 = W2) | Headroom | CUCB, all 50 rounds |
+|---|---|---|
+| 0 | +0.3% | −3.3% |
+| 0.25 | +2.6% | −0.1% |
+| 0.5 | +6.4% | +4.3% |
+| 1 | +15.1% | +12.9% |
+
+![Dose-response](results/unknown_dynamics_dose_response.png)
+
+### The method map so far
+
+| Corner | What wins on Higgs | Evidence |
+|---|---|---|
+| Dynamics known, feedback cheap | Greedy ≈ top-degree; BO adds nothing | Stages 1–5, both substrates |
+| Dynamics unknown, accounts alike | Top-degree; learning only costs reach | Stage 6, W1 |
+| Dynamics unknown, accounts differ, one shot | Top-degree. Greedy on an aggregate-only model is *worse* (−4 to −5%) | Stage 6, round 1 |
+| Dynamics unknown, accounts differ, multi-round | Bandit (CUCB) wins from round 2–4 and nears the true-model oracle by round ~40 | Stage 6, W2/W3 |
+| BO choosing seeds, any corner | Never wins. The centrality blend cannot express which accounts are strong. | Stages 1–4, 6 |
+| Spread driven by content (topic, timing) | **Untested.** Higgs has one topic. | Needs a multi-item dataset (e.g. Digg 2009, Twitter15/16) |
+
+Two readings:
+- **Sample efficiency matters when the unknown is account-level and campaigns repeat.**
+  That's where a learner earns its exploration cost.
+- **BO picking seeds is the wrong use of BO.** If BO has a role, it is the content-driven
+  corner (message, timing, budget split), with a bandit or greedy choosing the seeds.
+
+**Caveats specific to stage 6.**
+- Learners see edge-level feedback (who was exposed, who retweeted whom). That's realistic
+  for attributed retweets, but treating follows as exposures is an approximation.
+- The worlds are **stationary**. The held-out test shows transmissibility tripling at the
+  4 July announcement; stale estimates would hurt learners in a real campaign, and that
+  isn't modelled.
+- Fifty campaigns of 20 seeded accounts each is a stylised budget.
+- W2's headroom depends on estimating per-account rates from one week of realised outcomes.
+
 ## Methods
 
 - **Objective:** mean activated count over Monte Carlo IC simulations (noisy black box).
@@ -91,7 +216,14 @@ python 02_stronger_variant.py       # -> bo_strong_results.pkl
 python 03_freenode_naive.py         # -> bo_freenode_results.pkl
 python 04_freenode_constrained.py   # -> bo_constrained_results.pkl
 python 05_summary.py                # -> ../RESULTS.md, ../results/summary.json
-cd ../charts && for f in 0*.py; do python $f; done   # -> charts/figures/*.png
+# follower-graph validation and rerun (needs higgs-social_network + higgs-activity_time)
+python 00b_build_follower_graph.py  # -> follower_graph.npz
+python ../validation/calibrate_and_holdout.py && python ../validation/account_ranking_check.py
+GRAPH=follower python 01_rule_tuning_bo.py   # ... through 05_summary.py; outputs carry a _follower_wc_F20 suffix
+python 06_unknown_dynamics.py       # stage 6 (~25 min) -> unknown_dynamics.pkl
+GAMMAS=0.25,0.5 POLICIES=oracle,top-degree,CUCB N_RUNS=3 python 06_unknown_dynamics.py   # dose-response (~7 min)
+cd ../charts && for f in 0[1-4]*.py; do python $f; done   # retweet-graph figures -> charts/figures/*.png
+GRAPH=follower python 05_substrate_comparison.py && GRAPH=follower python 06_unknown_dynamics_charts.py   # -> RESULTS_unknown_dynamics.md
 ```
 
 The full pipeline takes about 3 minutes on a laptop. `QUICK=1` runs a smoke test with
@@ -117,8 +249,12 @@ Fixes made after a code audit (Nov 2026):
 
 ## Honest limitations
 
-- Results are specific to this graph, k=20, and IC with uniform p=0.12. A
-  weighted-cascade model, a larger k, or the follower graph (deeper cascades,
-  more overlap) could change the picture. None of these were tested.
+- The original results use the retweet graph with uniform p=0.12. The follower graph
+  with a calibrated weighted cascade was tested (above) and leaves the conclusion
+  unchanged. A larger k, and seeding interventions in the real world, were not tested.
+- The follower-graph simulator under-predicts spread out of sample (about 4.7×) and
+  ranks accounts no better than follower count, so all strategy comparisons remain
+  simulation results.
+- Stage 6's per-account worlds are scenarios shaped by one week of data and are stationary. The content-driven corner of the method map is untested.
 - The stage-3 collapse is partly a budget artifact (120-D, 60 noisy evaluations).
 - Run counts are small (4–5 per stage), so the run-level sds are rough.

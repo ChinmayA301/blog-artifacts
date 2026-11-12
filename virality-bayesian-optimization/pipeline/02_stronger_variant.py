@@ -24,8 +24,7 @@ g = load_graph()
 B = shared_baselines(g)
 sim = IC(g, seed=11)
 
-core = nx.core_number(g.H.to_undirected())
-core_arr = np.array([core[n] for n in g.nodes], float)
+core_arr = coreness(g)
 
 POOL = 3000
 pool = g.topk(g.outdeg, POOL)
@@ -37,7 +36,7 @@ U = ((A + A.T) > 0).tocsr()                 # undirected adjacency for the disco
 uptr, uind = U.indptr, U.indices
 def nbrs(ix):
     ix = np.atleast_1d(ix)
-    return np.concatenate([uind[uptr[i]:uptr[i + 1]] for i in ix]) if len(ix) else np.array([], int)
+    return U[ix].indices if len(ix) else np.array([], int)
 
 def build_seeds(a, b, lam, hop):
     base = a * pdeg_z + b * pcore_z

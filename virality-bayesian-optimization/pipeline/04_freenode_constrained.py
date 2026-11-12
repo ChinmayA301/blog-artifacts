@@ -26,9 +26,13 @@ POOL = 400
 pool = g.topk(g.outdeg, POOL)
 assert set(B['td_seeds']) <= set(pool)
 pdeg_z = (g.outdeg[pool] - g.outdeg[pool].mean()) / g.outdeg[pool].std()
-sub = g.H.subgraph(g.nodes[pool]).to_undirected()
-pos = {g.idx[n]: j for j, n in enumerate(g.nodes[pool])}
-neigh = [np.array([pos[g.idx[m]] for m in sub.neighbors(n)], int) for n in g.nodes[pool]]
+if g.H is not None:
+    sub = g.H.subgraph(g.nodes[pool]).to_undirected()
+    pos = {g.idx[n]: j for j, n in enumerate(g.nodes[pool])}
+    neigh = [np.array([pos[g.idx[m]] for m in sub.neighbors(n)], int) for n in g.nodes[pool]]
+else:
+    S = induced_undirected(g, pool)
+    neigh = [S.indices[S.indptr[j]:S.indptr[j + 1]] for j in range(POOL)]
 
 P = 12
 R = proj_rng.normal(size=(P, POOL)) / np.sqrt(P)
