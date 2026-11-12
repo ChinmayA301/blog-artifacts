@@ -1,0 +1,228 @@
+{
+ "T": 50,
+ "N_RUNS": 5,
+ "K": 20,
+ "F": 20,
+ "C": 0.726229930259597,
+ "ALPHA": 0.4466835921509634,
+ "worlds": {
+  "W1_homogeneous": {
+   "ref": {
+    "oracle": 24378.626666666667,
+    "prior-greedy": 24349.27666666667,
+    "top-degree": 24302.75,
+    "celf": 24415.12222222222
+   },
+   "c_pool_pct": [
+    0.726229930259597,
+    0.726229930259597,
+    0.726229930259597
+   ],
+   "oracle_vs_td_pct": 0.31221432416770334,
+   "policies": {
+    "oracle": {
+     "one_shot_round1_pct": 4.532203145734548,
+     "first10_pct": 0.06480748063490971,
+     "all_rounds_pct": 0.3578278178395511,
+     "last10_pct": 0.9415806853134034,
+     "final_set_pct": 0.31221432416770334,
+     "cumulative_breakeven_round": 14
+    },
+    "prior-greedy": {
+     "one_shot_round1_pct": -0.43019822859552415,
+     "first10_pct": -1.3880322185760963,
+     "all_rounds_pct": 0.00672351894333012,
+     "last10_pct": 1.063871372581282,
+     "final_set_pct": 0.19144609834964577,
+     "cumulative_breakeven_round": 47
+    },
+    "CUCB": {
+     "one_shot_round1_pct": -1.0827992716873625,
+     "first10_pct": -5.163654318955668,
+     "all_rounds_pct": -3.3266276450195975,
+     "last10_pct": 0.11072820977049425,
+     "final_set_pct": 0.6607126079696046,
+     "cumulative_breakeven_round": null
+    },
+    "Thompson": {
+     "one_shot_round1_pct": -31.82170741994218,
+     "first10_pct": -16.82735492896894,
+     "all_rounds_pct": -5.752525948709508,
+     "last10_pct": -1.780168910925728,
+     "final_set_pct": -0.7076291091886011,
+     "cumulative_breakeven_round": null
+    },
+    "BO": {
+     "one_shot_round1_pct": -0.9996811060476674,
+     "first10_pct": -1.2794848319634622,
+     "all_rounds_pct": -1.387061135056733,
+     "last10_pct": -2.130005863533968,
+     "final_set_pct": -0.6504613675407,
+     "cumulative_breakeven_round": null
+    }
+   }
+  },
+  "W3_mild_heterogeneity": {
+   "ref": {
+    "oracle": 52881.28444444444,
+    "prior-greedy": 42882.794444444444,
+    "top-degree": 45289.68111111111,
+    "celf": 52700.746666666666
+   },
+   "c_pool_pct": [
+    0.16255355217784628,
+    0.43925865945725817,
+    1.4504617294160358
+   ],
+   "oracle_vs_td_pct": 16.762324545206077,
+   "policies": {
+    "oracle": {
+     "one_shot_round1_pct": 17.531849847670735,
+     "first10_pct": 16.291037401627385,
+     "all_rounds_pct": 16.478320680994972,
+     "last10_pct": 16.01799507285362,
+     "final_set_pct": 16.762324545206077,
+     "cumulative_breakeven_round": 1
+    },
+    "prior-greedy": {
+     "one_shot_round1_pct": -4.108399673970375,
+     "first10_pct": -5.495691402650394,
+     "all_rounds_pct": -5.33737719455496,
+     "last10_pct": -4.467068571641519,
+     "final_set_pct": -5.314426173065224,
+     "cumulative_breakeven_round": null
+    },
+    "CUCB": {
+     "one_shot_round1_pct": -6.319057765255465,
+     "first10_pct": 4.140234249582431,
+     "all_rounds_pct": 13.137912970266253,
+     "last10_pct": 16.27500726005455,
+     "final_set_pct": 16.00674158962825,
+     "cumulative_breakeven_round": 4
+    },
+    "Thompson": {
+     "one_shot_round1_pct": -25.601154229073465,
+     "first10_pct": 1.6153765514356877,
+     "all_rounds_pct": 12.613705260749498,
+     "last10_pct": 16.668960133253808,
+     "final_set_pct": 15.556475668126811,
+     "cumulative_breakeven_round": 8
+    },
+    "BO": {
+     "one_shot_round1_pct": -4.310653250839835,
+     "first10_pct": -4.564750866845724,
+     "all_rounds_pct": -3.173935156629859,
+     "last10_pct": -1.8284984367177293,
+     "final_set_pct": -3.5710175138496614,
+     "cumulative_breakeven_round": null
+    }
+   }
+  },
+  "W2_heterogeneous": {
+   "ref": {
+    "oracle": 53776.48777777778,
+    "prior-greedy": 44347.607777777775,
+    "top-degree": 46739.58777777778,
+    "celf": 54117.66222222222
+   },
+   "c_pool_pct": [
+    0.02671034351540383,
+    0.3549319724768157,
+    1.600140483149593
+   ],
+   "oracle_vs_td_pct": 15.055545704546592,
+   "policies": {
+    "oracle": {
+     "one_shot_round1_pct": 16.143086794209125,
+     "first10_pct": 15.21252659742709,
+     "all_rounds_pct": 15.177147594773865,
+     "last10_pct": 15.05681277225166,
+     "final_set_pct": 15.055545704546592,
+     "cumulative_breakeven_round": 1
+    },
+    "prior-greedy": {
+     "one_shot_round1_pct": -3.9456654742996977,
+     "first10_pct": -4.233044987868839,
+     "all_rounds_pct": -5.06030089315912,
+     "last10_pct": -4.646698614681366,
+     "final_set_pct": -5.117674574650966,
+     "cumulative_breakeven_round": null
+    },
+    "CUCB": {
+     "one_shot_round1_pct": -5.271308316820833,
+     "first10_pct": 6.25690632131044,
+     "all_rounds_pct": 12.948826701248173,
+     "last10_pct": 16.528841159132558,
+     "final_set_pct": 15.497422848473285,
+     "cumulative_breakeven_round": 2
+    },
+    "Thompson": {
+     "one_shot_round1_pct": -14.125472841497267,
+     "first10_pct": 3.464840618453602,
+     "all_rounds_pct": 11.949066065314273,
+     "last10_pct": 15.332681700777595,
+     "final_set_pct": 14.900213188301548,
+     "cumulative_breakeven_round": 5
+    },
+    "BO": {
+     "one_shot_round1_pct": -5.49638518420823,
+     "first10_pct": -3.6399289310519944,
+     "all_rounds_pct": -3.2346621989177926,
+     "last10_pct": -2.9229350166141588,
+     "final_set_pct": -2.4833533334304714,
+     "cumulative_breakeven_round": null
+    }
+   }
+  }
+ },
+ "dose_response": [
+  {
+   "gamma": 0.0,
+   "oracle_pct": 0.31221432416770334,
+   "cucb_first10_pct": -5.163654318955668,
+   "cucb_all50_pct": -3.3266276450195975,
+   "cucb_final_pct": 0.6607126079696046,
+   "c_pool_p10_p90": [
+    0.726229930259597,
+    0.726229930259597
+   ],
+   "n_runs": 5
+  },
+  {
+   "gamma": 0.25,
+   "oracle_pct": 2.577702094606127,
+   "cucb_first10_pct": -1.9817196455125918,
+   "cucb_all50_pct": -0.10948478398042916,
+   "cucb_final_pct": 1.718941145470665,
+   "c_pool_p10_p90": [
+    0.37217242028592024,
+    1.0354135557528257
+   ],
+   "n_runs": 3
+  },
+  {
+   "gamma": 0.5,
+   "oracle_pct": 6.388595358861404,
+   "cucb_first10_pct": -1.0924564975051454,
+   "cucb_all50_pct": 4.319337403973522,
+   "cucb_final_pct": 4.585592290022622,
+   "c_pool_p10_p90": [
+    0.16678199101037644,
+    1.290887732540422
+   ],
+   "n_runs": 3
+  },
+  {
+   "gamma": 1.0,
+   "oracle_pct": 15.055545704546592,
+   "cucb_first10_pct": 6.25690632131044,
+   "cucb_all50_pct": 12.948826701248173,
+   "cucb_final_pct": 15.497422848473285,
+   "c_pool_p10_p90": [
+    0.02671034351540383,
+    1.600140483149593
+   ],
+   "n_runs": 5
+  }
+ ]
+}
