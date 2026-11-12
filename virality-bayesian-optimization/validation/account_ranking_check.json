@@ -1,0 +1,138 @@
+{
+  "uniform": {
+    "spearman": 0.44522535910769073,
+    "top20_overlap_with_observed": 8,
+    "top20_predicted_with_zero_observed": 0,
+    "worst_overpredicted": [
+      {
+        "node": 1,
+        "predicted": 242.2760552125878,
+        "observed": 0
+      },
+      {
+        "node": 331,
+        "predicted": 201.21710949197814,
+        "observed": 0
+      },
+      {
+        "node": 3158,
+        "predicted": 173.84943961876277,
+        "observed": 0
+      }
+    ]
+  },
+  "wc_F1": {
+    "spearman": 0.5030028549101334,
+    "top20_overlap_with_observed": 8,
+    "top20_predicted_with_zero_observed": 1,
+    "worst_overpredicted": [
+      {
+        "node": 1,
+        "predicted": 8009.905134739504,
+        "observed": 0
+      },
+      {
+        "node": 3158,
+        "predicted": 334.56753031812616,
+        "observed": 0
+      },
+      {
+        "node": 3369,
+        "predicted": 305.24986955250614,
+        "observed": 0
+      }
+    ]
+  },
+  "wc_F5": {
+    "spearman": 0.5030013144489065,
+    "top20_overlap_with_observed": 8,
+    "top20_predicted_with_zero_observed": 1,
+    "worst_overpredicted": [
+      {
+        "node": 1,
+        "predicted": 1740.405193665422,
+        "observed": 0
+      },
+      {
+        "node": 3158,
+        "predicted": 300.8797368317719,
+        "observed": 0
+      },
+      {
+        "node": 354,
+        "predicted": 300.3529363663614,
+        "observed": 0
+      }
+    ]
+  },
+  "wc_F10": {
+    "spearman": 0.5026303824717906,
+    "top20_overlap_with_observed": 8,
+    "top20_predicted_with_zero_observed": 1,
+    "worst_overpredicted": [
+      {
+        "node": 1,
+        "predicted": 970.2474264494377,
+        "observed": 0
+      },
+      {
+        "node": 354,
+        "predicted": 288.4464517848385,
+        "observed": 0
+      },
+      {
+        "node": 3158,
+        "predicted": 278.6138456075677,
+        "observed": 0
+      }
+    ]
+  },
+  "wc_F20": {
+    "spearman": 0.49943734184360167,
+    "top20_overlap_with_observed": 8,
+    "top20_predicted_with_zero_observed": 1,
+    "worst_overpredicted": [
+      {
+        "node": 1,
+        "predicted": 590.0585405804817,
+        "observed": 0
+      },
+      {
+        "node": 354,
+        "predicted": 262.2013706311378,
+        "observed": 0
+      },
+      {
+        "node": 3158,
+        "predicted": 250.75438716596355,
+        "observed": 0
+      }
+    ]
+  },
+  "wc_F50": {
+    "spearman": 0.48541230022121656,
+    "top20_overlap_with_observed": 8,
+    "top20_predicted_with_zero_observed": 0,
+    "worst_overpredicted": [
+      {
+        "node": 1,
+        "predicted": 361.6874872291739,
+        "observed": 0
+      },
+      {
+        "node": 331,
+        "predicted": 220.67544086551658,
+        "observed": 0
+      },
+      {
+        "node": 354,
+        "predicted": 218.83715754589858,
+        "observed": 0
+      }
+    ]
+  },
+  "top_degree": {
+    "top20_overlap_with_observed": 8,
+    "with_zero_observed": 0
+  }
+}

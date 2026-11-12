@@ -29,9 +29,11 @@ ax.set_ylabel('Expected influence spread (nodes activated)')
 ax.set_title('Same objective, four search spaces: BO vs random search vs top-degree', loc='left')
 ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.17), frameon=False, fontsize=9, ncol=3)
 ax.set_ylim(0, max(bo_m + [TD]) * 1.15); clean(ax)
-caption(ax, 'k=%d, IC p=%s, %d sims/evaluation, all stages. Bars = mean ± sd across runs of each run’s best, '
+model = ('IC p=%s' % S[1]['IC_P']) if GRAPH == 'retweet' else \
+    ('weighted cascade c=%.3f, floor %d' % (S[1]['IC_P'], S[1].get('WC_FLOOR', 1)))
+caption(ax, 'k=%d, %s, %d sims/evaluation, all stages. Bars = mean \u00b1 sd across runs of each run\u2019s best, '
             're-evaluated with %d fresh sims. %% = BO mean vs top-degree.'
-        % (S[1]['K'], S[1]['IC_P'], S[1]['MC'], S[1]['FINAL_SIMS']), y=-0.27)
+        % (S[1]['K'], model, S[1]['MC'], S[1]['FINAL_SIMS']), y=-0.27)
 save('bo_freenode_progression.png')
 
 # ---- FIG 2: stage 3 convergence ----

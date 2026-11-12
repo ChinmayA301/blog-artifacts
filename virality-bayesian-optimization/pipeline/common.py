@@ -12,7 +12,7 @@ Why this module exists (audit fixes, Nov 2026):
   * Every run's best point is re-evaluated with fresh simulations, so we can
     report run-to-run spread instead of a single best-of-N number.
 """
-import os, pickle, time, heapq, warnings
+import os, json, pickle, time, heapq, warnings
 import numpy as np
 import networkx as nx
 from scipy.stats import norm, ttest_ind
@@ -26,16 +26,48 @@ warnings.filterwarnings('ignore', module='sklearn.gaussian_process')
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 GRAPH_PKL = os.path.join(HERE, 'rt_graph.pkl')
-BASELINE_PKL = os.path.join(HERE, 'baselines.pkl')
+BASELINE_PKL_BASE = os.path.join(HERE, 'baselines')
 
 # Edge u -> v in rt_graph.pkl means "influence can flow from u to v", i.e. v
 # retweeted u. SNAP's raw file lists (retweeter, retweeted), so
 # 00_build_graph.py reverses it. Bump this tag if the convention ever changes.
 DIRECTION = 'influence: retweeted -> retweeter (SNAP lines reversed)'
 
+# ---- which diffusion substrate ----
+# GRAPH=retweet  (default) the retweet graph, uniform IC p=0.12 - the original study
+# GRAPH=follower the follower (exposure) graph with activation probabilities
+#                calibrated on the real Higgs activity log (validation/), using
+#                CASCADE=wc (weighted cascade, default; best held-out fit) or uniform.
+GRAPH = os.environ.get('GRAPH', 'retweet')
+assert GRAPH in ('retweet', 'follower'), GRAPH
+CASCADE = os.environ.get('CASCADE', 'uniform' if GRAPH == 'retweet' else 'wc')
+assert CASCADE in ('uniform', 'wc'), CASCADE
+FOLLOWER_NPZ = os.path.join(HERE, 'follower_graph.npz')
+CALIBRATION_JSON = os.path.join(HERE, '..', 'validation', 'calibration.json')
+FOLLOWER_DIRECTION = 'influence: followee -> follower (SNAP lines reversed)'
+def _default_floor():
+    # the floor fixed by validation/calibrate_and_holdout.py (out-of-sample fit); 1 = no floor
+    try:
+        return json.load(open(CALIBRATION_JSON))['chosen']['floor']
+    except (OSError, KeyError):
+        return 1
+
+
+WC_FLOOR = int(os.environ.get('WC_FLOOR', _default_floor() if GRAPH == 'follower' else 1))  # p_uv = c / max(followees(v), F)
+TAG = '' if GRAPH == 'retweet' else '_follower_' + CASCADE + ('_F%d' % WC_FLOOR if CASCADE == 'wc' and WC_FLOOR != 1 else '')
+BASELINE_PKL = BASELINE_PKL_BASE + TAG + '.pkl'
+
+
+def _default_p():
+    if GRAPH == 'retweet':
+        return 0.12
+    cal = json.load(open(CALIBRATION_JSON))['full']      # whole-week calibration
+    return cal['wc_c_by_floor'][str(WC_FLOOR)] if CASCADE == 'wc' else cal['uniform_p']
+
+
 # ---- the single objective shared by all stages ----
 K = 20                                        # seed budget
-IC_P = float(os.environ.get('IC_P', 0.12))    # IC activation prob per edge
+IC_P = float(os.environ.get('IC_P', _default_p()))   # uniform: p per edge; wc: c in p_uv = c / followees(v)
 MC = int(os.environ.get('MC', 80))            # sims per BO/random-search evaluation
 FINAL_SIMS = 400                              # fresh sims for re-evaluating winners
 TD_SIMS = 4000                                # sims for the shared top-degree reference
@@ -60,6 +92,21 @@ class Graph:
         self.indices = A.indices.astype(np.int64)
         self.outdeg = np.diff(self.indptr).astype(float)   # = number of retweeters
         self.n_edges = H.number_of_edges()
+        self.eprob = None                                   # None = uniform IC_P on every edge
+
+    @classmethod
+    def from_csr(cls, indptr, indices, ids):
+        g = cls.__new__(cls)
+        g.H = None
+        g.nodes = np.asarray(ids)
+        g.N = len(g.nodes)
+        g.idx = {int(n): i for i, n in enumerate(g.nodes)}
+        g.indptr = np.asarray(indptr, dtype=np.int64)
+        g.indices = np.asarray(indices, dtype=np.int64)
+        g.outdeg = np.diff(g.indptr).astype(float)          # = number of followers
+        g.n_edges = len(g.indices)
+        g.eprob = None
+        return g
 
     def topk(self, score, k=K, among=None):
         """Indices of the k highest-scoring nodes (optionally within `among`)."""
@@ -70,6 +117,17 @@ class Graph:
 
 
 def load_graph():
+    if GRAPH == 'follower':
+        if not os.path.exists(FOLLOWER_NPZ):
+            raise SystemExit('follower_graph.npz missing - run 00b_build_follower_graph.py first')
+        z = np.load(FOLLOWER_NPZ)
+        if str(z['direction']) != FOLLOWER_DIRECTION:
+            raise SystemExit('follower_graph.npz has an unexpected edge convention')
+        g = Graph.from_csr(z['indptr'], z['indices'], z['ids'])
+        if CASCADE == 'wc':
+            followees = np.bincount(g.indices, minlength=g.N)
+            g.eprob = np.minimum(1.0, IC_P / np.maximum(followees, WC_FLOOR)[g.indices])
+        return g
     if not os.path.exists(GRAPH_PKL):
         raise SystemExit('rt_graph.pkl missing - run 00_build_graph.py first')
     H = pickle.load(open(GRAPH_PKL, 'rb'))
@@ -88,6 +146,7 @@ class IC:
 
     def spread(self, seeds, n_sims=MC):
         indptr, indices, p, rng, active = self.g.indptr, self.g.indices, self.p, self.rng, self._active
+        ep = self.g.eprob
         seeds = np.unique(np.asarray(seeds, dtype=np.int64))
         total = 0
         for _ in range(n_sims):
@@ -101,7 +160,7 @@ class IC:
                 if m == 0:
                     break
                 offs = np.repeat(starts - (np.cumsum(lens) - lens), lens) + np.arange(m)
-                cand = indices[offs[rng.random(m) < p]]
+                cand = indices[offs[rng.random(m) < (p if ep is None else ep[offs])]]
                 cand = np.unique(cand)
                 cand = cand[~active[cand]]
                 active[cand] = True
@@ -205,15 +264,60 @@ def audience_overlap(g, seeds):
 
 def save_stage(path, **kw):
     kw.update(K=K, IC_P=IC_P, MC=MC, FINAL_SIMS=FINAL_SIMS, QUICK=QUICK)
+    kw.update(GRAPH=GRAPH, CASCADE=CASCADE, WC_FLOOR=WC_FLOOR)
+    path = path.replace('.pkl', TAG + '.pkl')
     pickle.dump(kw, open(os.path.join(HERE, path), 'wb'))
     print('saved', path)
+
+
+# ------------------------------------------------- graph ops without networkx
+def _igraph_undirected(g):
+    import igraph as ig
+    src = np.repeat(np.arange(g.N), np.diff(g.indptr))
+    G = ig.Graph(n=g.N, edges=np.stack([src, g.indices], 1).tolist(), directed=True)
+    return G.as_undirected(mode='collapse')
+
+
+def pagerank_endorsement(g):
+    """PageRank on the endorsement graph (edges reversed: follower -> followee,
+    retweeter -> retweeted), so it ranks accounts endorsed by endorsed accounts."""
+    if g.H is not None:
+        pr = nx.pagerank(g.H.reverse(copy=False), alpha=0.85, max_iter=100, tol=1e-6)
+        return np.array([pr[n] for n in g.nodes])
+    import scipy.sparse as sp
+    A = sp.csr_matrix((np.ones(g.n_edges), g.indices, g.indptr), shape=(g.N, g.N))
+    M = A.T.tocsr()                                   # endorsement direction
+    outd = np.asarray(M.sum(1)).ravel(); inv = np.where(outd > 0, 1.0 / np.maximum(outd, 1), 0)
+    P = sp.diags(inv) @ M
+    x = np.full(g.N, 1.0 / g.N)
+    for _ in range(100):
+        x_new = 0.85 * (P.T @ x) + (0.85 * x[outd == 0].sum() + 0.15) / g.N
+        if np.abs(x_new - x).sum() < 1e-6:
+            break
+        x = x_new
+    return x_new
+
+
+def coreness(g):
+    if g.H is not None:
+        core = nx.core_number(g.H.to_undirected())
+        return np.array([core[n] for n in g.nodes], float)
+    return np.array(_igraph_undirected(g).coreness(), float)
+
+
+def induced_undirected(g, idx):
+    """Undirected adjacency (scipy CSR) of the subgraph induced by node indices idx."""
+    import scipy.sparse as sp
+    A = sp.csr_matrix((np.ones(g.n_edges), g.indices, g.indptr), shape=(g.N, g.N))
+    S = A[idx][:, idx]
+    return ((S + S.T) > 0).astype(float).tocsr()
 
 
 # ---------------------------------------------------------------- baselines
 def shared_baselines(g):
     """Top-degree / random-seed baselines, computed ONCE with a fixed RNG and
     cached, so every stage and chart compares against identical numbers."""
-    key = (IC_P, MC, TD_SIMS, g.N, g.n_edges, DIRECTION)
+    key = (IC_P, MC, TD_SIMS, g.N, g.n_edges, DIRECTION, GRAPH, CASCADE, WC_FLOOR)
     if os.path.exists(BASELINE_PKL):
         b = pickle.load(open(BASELINE_PKL, 'rb'))
         if b.get('key') == key:
@@ -251,7 +355,7 @@ def celf_snapshot(g, pool, k=K, p=IC_P, n_worlds=200, seed=777):
     rows = np.repeat(np.arange(N), np.diff(indptr))
     worlds = []
     for _ in range(n_worlds):
-        live = r.random(indices.size) < p
+        live = r.random(indices.size) < (p if g.eprob is None else g.eprob)
         w_ptr = np.zeros(N + 1, dtype=np.int64)
         np.cumsum(np.bincount(rows[live], minlength=N), out=w_ptr[1:])
         worlds.append((w_ptr, indices[live]))

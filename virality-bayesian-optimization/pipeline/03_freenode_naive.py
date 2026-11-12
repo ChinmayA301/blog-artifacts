@@ -21,12 +21,20 @@ sim = IC(g, seed=23)
 pad_rng = np.random.default_rng(230)
 
 pool = g.topk(g.outdeg, 1500)
-sub = g.H.subgraph(g.nodes[pool]).to_undirected()
-cc = max(nx.connected_components(sub), key=len)
-sub_cc = sub.subgraph(cc)
-emb_ids = np.array(sub_cc.nodes())
-emb_ix = np.array([g.idx[n] for n in emb_ids])
-A = nx.to_scipy_sparse_array(sub_cc, nodelist=emb_ids, format='csr', dtype=float)
+if g.H is not None:
+    sub = g.H.subgraph(g.nodes[pool]).to_undirected()
+    cc = max(nx.connected_components(sub), key=len)
+    sub_cc = sub.subgraph(cc)
+    emb_ids = np.array(sub_cc.nodes())
+    emb_ix = np.array([g.idx[n] for n in emb_ids])
+    A = nx.to_scipy_sparse_array(sub_cc, nodelist=emb_ids, format='csr', dtype=float)
+else:
+    from scipy.sparse.csgraph import connected_components
+    S = induced_undirected(g, pool)
+    _, lab = connected_components(S, directed=False)
+    keep = np.flatnonzero(lab == np.bincount(lab).argmax())
+    emb_ix = pool[keep]
+    A = S[keep][:, keep].tocsr()
 A.indices = A.indices.astype(np.int32); A.indptr = A.indptr.astype(np.int32)
 D = 6
 t0 = time.time()

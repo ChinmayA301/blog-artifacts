@@ -1,0 +1,60 @@
+{
+  "t_split_utc": "2012-07-04T00:00:00Z",
+  "pre": {
+    "window": "before 2012-07-04",
+    "active_users": 35566,
+    "retweet_pairs": 29411,
+    "follow_explained_share": 0.6670973445309578,
+    "follow_explained_adoptions": 19620,
+    "exposures": 3929333,
+    "uniform_p": 0.004993213860978441,
+    "uniform_reproduction_number": 0.5381504423395193,
+    "wc_c_by_floor": {
+      "1": 0.15490656668892228,
+      "5": 0.1682027958448425,
+      "10": 0.1883908569931754,
+      "20": 0.2316907413561068,
+      "50": 0.36309389601022646
+    }
+  },
+  "in_window": {
+    "window": "from 2012-07-04 (held-out window itself)",
+    "active_users": 287476,
+    "retweet_pairs": 301617,
+    "follow_explained_share": 0.5872314889412732,
+    "follow_explained_adoptions": 177119,
+    "exposures": 12677664,
+    "uniform_p": 0.013970949222191092,
+    "uniform_reproduction_number": 1.5057381304216402,
+    "wc_c_by_floor": {
+      "1": 0.4606175827821235,
+      "5": 0.5003437169693294,
+      "10": 0.5579535761028805,
+      "20": 0.6789365484845276,
+      "50": 1.041291784039726
+    }
+  },
+  "full": {
+    "window": "whole week",
+    "active_users": 304474,
+    "retweet_pairs": 328044,
+    "follow_explained_share": 0.5913596956505834,
+    "follow_explained_adoptions": 193992,
+    "exposures": 13035501,
+    "uniform_p": 0.014881821573255988,
+    "uniform_reproduction_number": 1.603908641897461,
+    "wc_c_by_floor": {
+      "1": 0.49314801756558163,
+      "5": 0.5357078341300999,
+      "10": 0.5972240071103225,
+      "20": 0.726229930259597,
+      "50": 1.1121894286584937
+    }
+  },
+  "chosen": {
+    "model": "wc",
+    "floor": 20,
+    "c": 0.726229930259597,
+    "rule": "floor with the lowest OUT-OF-SAMPLE fit error (calibrated before 4 July, tested from 4 July; |log spread ratio| + |log depth ratio|), fixed before any optimisation was run on it; c from the whole-week calibration at that floor"
+  }
+}

@@ -5,6 +5,8 @@ higgs-*
 
 # Cached intermediate artifacts
 *.pkl
+*.npz
+*.log
 .cache/
 
 # Generated figures (live in the blog's assets, not here)

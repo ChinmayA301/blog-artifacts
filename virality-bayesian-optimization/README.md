@@ -10,8 +10,8 @@ Code behind the figures in
 > the direction information actually flows. "Top-degree" meant "retweeted the
 > most", not "was retweeted the most". The bug is fixed and every number below
 > comes from a full rerun. **The earlier headline (BO beats top-degree by
-> +2.5% / +4.5%) does not survive the fix.** The published posts still quote the old
-> numbers and need updating. See [Changes in the rerun](#changes-in-the-rerun).
+> +2.5% / +4.5%) does not survive the fix.** The published posts were corrected on 5 Nov
+> 2026. See [Changes in the rerun](#changes-in-the-rerun).
 
 Influence maximization under the Independent Cascade (IC) model on the SNAP
 Higgs **retweet** network (largest weakly-connected component: 223,833 nodes /
@@ -64,6 +64,44 @@ Controls:
 What it does **not** support: any claim that BO, diversity or redundancy
 penalties improve on top-degree for this graph.
 
+## Follower-graph validation and rerun (Nov 2026)
+
+The study above simulates diffusion over the retweet graph, whose edges are
+retweets that already happened. [`validation/`](validation/README.md) checks the
+simulator against the real Higgs activity log and the follower (exposure) graph,
+then reruns all four stages on the follower graph.
+
+- **Substrate.** 59% of retweets travel along follow edges. On the follower graph the
+  top-20 accounts' audiences overlap 44–65%, against 13% on the retweet graph.
+- **Calibration and held-out test.** A weighted cascade (p_uv = c / max(followees(v), F))
+  is calibrated on 1–3 July and tested from 4 July. Out of sample it reproduces cascade
+  depth (0.053 vs 0.056 observed) but under-predicts spread about 4.7×, because
+  transmissibility tripled at the announcement.
+- **A crawl artifact that optimisers exploit.** Without the floor (F = 1), 33k users who
+  appear to follow a single account make node 1 look like a 12k-node spreader. It was
+  never retweeted. CELF and BO then "beat" top-degree by +45% and +43%, almost entirely
+  by adding node 1. The floor F = 20 was chosen by out-of-sample fit before rerunning.
+- **Per-account check.** No model variant ranks candidate accounts better than raw
+  follower count (Spearman ≈ 0.5; 8 of the top 20 in the observed top 20, same as
+  top-degree).
+
+Rerun on the follower graph with F = 20 ([`RESULTS_follower_wc_F20.md`](RESULTS_follower_wc_F20.md)):
+
+| | vs top-degree |
+|---|---|
+| CELF | +0.67% |
+| Stage 1, rule-tuning BO | −0.12% (random search −0.69%) |
+| Stage 2, rules + redundancy BO | +0.36% (random search +0.34%) |
+| Stage 3, naive free-node BO | −92% |
+| Stage 4, constrained free-node BO | −0.32% (0/5 runs above the decoder-only control) |
+
+**Conclusion: on the better-validated simulator, top-degree is still within 1% of the
+best seeding found, and BO adds nothing over random search in the rule spaces.** Heavy
+audience overlap costs little here because per-exposure activation probabilities are
+small, so a follower being reached twice is rare.
+
+![Substrate comparison](validation/substrate_comparison.png)
+
 ## Methods
 
 - **Objective:** mean activated count over Monte Carlo IC simulations (noisy black box).
@@ -91,6 +129,10 @@ python 02_stronger_variant.py       # -> bo_strong_results.pkl
 python 03_freenode_naive.py         # -> bo_freenode_results.pkl
 python 04_freenode_constrained.py   # -> bo_constrained_results.pkl
 python 05_summary.py                # -> ../RESULTS.md, ../results/summary.json
+# follower-graph validation and rerun (needs higgs-social_network + higgs-activity_time)
+python 00b_build_follower_graph.py  # -> follower_graph.npz
+python ../validation/calibrate_and_holdout.py && python ../validation/account_ranking_check.py
+GRAPH=follower python 01_rule_tuning_bo.py   # ... through 05_summary.py; outputs carry a _follower_wc_F20 suffix
 cd ../charts && for f in 0*.py; do python $f; done   # -> charts/figures/*.png
 ```
 
@@ -117,8 +159,11 @@ Fixes made after a code audit (Nov 2026):
 
 ## Honest limitations
 
-- Results are specific to this graph, k=20, and IC with uniform p=0.12. A
-  weighted-cascade model, a larger k, or the follower graph (deeper cascades,
-  more overlap) could change the picture. None of these were tested.
+- The original results use the retweet graph with uniform p=0.12. The follower graph
+  with a calibrated weighted cascade was tested (above) and leaves the conclusion
+  unchanged. A larger k, and seeding interventions in the real world, were not tested.
+- The follower-graph simulator under-predicts spread out of sample (about 4.7×) and
+  ranks accounts no better than follower count, so all strategy comparisons remain
+  simulation results.
 - The stage-3 collapse is partly a budget artifact (120-D, 60 noisy evaluations).
 - Run counts are small (4–5 per stage), so the run-level sds are rough.
