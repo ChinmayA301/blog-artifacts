@@ -163,6 +163,55 @@ a few percent up front, and the gain scales with how much accounts really differ
 
 ![Dose-response](results/unknown_dynamics_dose_response.png)
 
+### Rerun under a damped cascade (Nov 2026)
+
+A later check against reconstructed real Higgs cascades (the manufactured-virality
+follow-up, Phase A) found the weighted cascade above too viral downstream: only 32% of
+simulated adopters sit at depth 1, against 71% in reality. Damping adopters fixes this.
+Seeds' own edges keep p_uv, while adopters (generation ≥ 1) transmit at δ·p_uv, with
+δ = 0.4 chosen on a calibration half. It reproduces the held-out broadcast share (71.4%).
+Stage 6 was rerun with `DELTA=0.4`:
+- The greedy oracle's second-hop term is scaled by δ.
+- The CELF check uses coupled seed/adopter live-edge snapshots.
+- The learners **model the damping explicitly**: an adopter's tried edge adds δ·w to the
+  exposure mass in its Gamma update, a seed's edge adds w. They are assumed to know δ, as
+  they know c.
+
+Full tables: [`RESULTS_unknown_dynamics_d04.md`](RESULTS_unknown_dynamics_d04.md).
+
+| Reach vs top-degree, same world | Original (δ = 1) | Damped (δ = 0.4) |
+|---|---|---|
+| Top-degree expected reach, W1 / W2 | 24,303 / 46,740 | 16,540 / 31,309 |
+| Headroom (greedy, true model), W1 / W2 | +0.3% / +15.1% | +1.2% / +21.4% |
+| CUCB, all 50 rounds, W1 / W2 | −3.3% / +12.9% | −5.1% / +14.9% |
+| CUCB final seed set, W2 | +15.5% | +19.7% |
+| CUCB passes top-degree in cumulative reach, W2 / W3 | round 2 / round 4 | round 4 / round 4 |
+| Thompson passes top-degree, W2 / W3 | round 5 / round 8 | round 12 / round 14 |
+| Greedy with aggregate calibration only, W2 | −5.1% | −5.6% |
+| BO over centrality blend, all 50 rounds, W1 / W2 | −1.4% / −3.2% | −0.8% / −2.9% (never wins) |
+| Dose-response, CUCB all 50 rounds at γ = 0.25 / 0.5 | −0.1% / +4.3% | −2.1% / +2.2% |
+
+**What changes and what doesn't.** The qualitative conclusions hold:
+- Learning per-account rates loses to top-degree when accounts are alike.
+- It wins over a 50-round campaign when they differ as in the data.
+- BO choosing seeds never wins.
+
+The numbers move in both directions:
+- **More headroom when accounts differ.** It rises from +15% to +21%, because with weak
+  downstream spread the seeds' own rates are a larger share of reach.
+- **Exploration costs more when they don't.** CUCB is −5% in W1 instead of −3%.
+- **Later break-even.** CUCB passes top-degree at round 4 instead of round 2 in W2;
+  Thompson needs 12 rounds instead of 5.
+- **Higher dose-response threshold.** Learning pays once headroom exceeds roughly 4–5%,
+  up from about 3%. At γ = 0.25 (headroom +2.5%) CUCB now loses 2%.
+
+Caveats:
+- The damped model fixes cascade *shape*. Its δ was chosen for the homogeneous model;
+  the follow-up's per-account damped variant fitted best at δ = 0.6, which W2 does not use.
+- The dose-response points at γ = 0.25 and 0.5 are 3 runs each.
+
+![Unknown dynamics, damped](results/unknown_dynamics_d04.png)
+
 ### The method map so far
 
 | Corner | What wins on Higgs | Evidence |
@@ -224,6 +273,8 @@ python 06_unknown_dynamics.py       # stage 6 (~25 min) -> unknown_dynamics.pkl
 GAMMAS=0.25,0.5 POLICIES=oracle,top-degree,CUCB N_RUNS=3 python 06_unknown_dynamics.py   # dose-response (~7 min)
 cd ../charts && for f in 0[1-4]*.py; do python $f; done   # retweet-graph figures -> charts/figures/*.png
 GRAPH=follower python 05_substrate_comparison.py && GRAPH=follower python 06_unknown_dynamics_charts.py   # -> RESULTS_unknown_dynamics.md
+# stage 6 under damped adopters (same two pipeline commands and the chart script, each with DELTA=0.4)
+#   -> unknown_dynamics_d04.pkl, unknown_dynamics_gamma_d04.pkl, RESULTS_unknown_dynamics_d04.md
 ```
 
 The full pipeline takes about 3 minutes on a laptop. `QUICK=1` runs a smoke test with
